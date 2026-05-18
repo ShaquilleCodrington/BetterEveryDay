@@ -9,6 +9,7 @@ type ActivityPageProps = {
 
 //function def
 function ActivityPage({ activityName, onBack }: ActivityPageProps) {
+ 
   const storageKey = `activity-notes-${activityName}`;
 
   const [notes, setNotes] = useState("");
