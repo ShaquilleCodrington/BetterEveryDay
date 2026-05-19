@@ -2,11 +2,14 @@
 import { useState } from "react";
 import { statesData} from "../statesData";
 import  ActivityPage  from  "../pages/ActivityPage"
+import { Link } from "react-router-dom";
 
 
 //This is where:components state rendering buttons activities will live.
 
 export default function FocusPage() {
+
+  
   
   const [selectedFocus,setSelectedFocus] = useState("");
   const [selectedActivity, setSelectedActivity] = useState("");
@@ -31,6 +34,11 @@ export default function FocusPage() {
   }
   return (
     <main>
+
+<Link to = "/">
+        <button> Dashboard </button>
+        </Link>
+
       {/* if no activity is selected show focus/activity section */}
 
       {!selectedActivity && (
