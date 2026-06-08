@@ -1,5 +1,5 @@
-import TaskCard from "../Components/TaskCard";
-import { Link } from "react-router-dom";
+
+import DashboardAccordion from "../Components/DashboardAccordion";
 
 export default function DashboardPage() {
  
@@ -9,32 +9,35 @@ export default function DashboardPage() {
         <div style = {{ padding: "20px" }}>
             <h1> Dashboard </h1>
 
-            {/* TaskPreview Section*/}
-            <h2> Task Preview</h2>
+        {/* Line to separate sections*/}
+        <hr style = {{ margin: "30px 0"}} />
+
+            <DashboardAccordion 
+            title = "Congruence"
+            preview = "Match your Task to your MOOD."
+            expandedView = {[  "Current mood: Focused",
+            "3 matching tasks available",
+            "Last check-in: Today",]} 
+        
+            pagePath = "/focus"/> 
+
+           <DashboardAccordion 
+            title = "Task List"
+            preview = "View and manage your tasks"
+            expandedView = {[  "Current Task: Build TaskCard",
+             "notes: Design from sketch",
+            " Implement accordion",
+            " Journal Progress "]} 
+        
+             pagePath = "/task"/> 
+
+           
             
-           <TaskCard
-        id={1}
-        title="Build TaskCard"
-        notes={`Design from sketch
-        Implement accordion
-        Test preview lines`}
-        completed={false}
-        focus="Focused"
-        priority="High"
-        dueDate="May 20"
-        updatedAt="2026-05-18"
-       />
-       <Link to ="/task">
-       <button> Task List </button>
-       </Link>
+           
+       
 
        <hr style = {{ margin: "30px 0"}} />
 
-       {/* Focus System Section */}
-       <h2> Focus System </h2>
-       <Link to = "/focus" >
-       <button> Focus Page </button>
-       </Link>
         </div>
     );
 }
