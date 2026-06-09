@@ -42,11 +42,11 @@ export default function TaskCard({
             cursor: "pointer",
             fontWeight: 500, }}>
 
-            <strong> { dueDate }</strong>
-            <span> { title }</span>
-            <span> { completed ? "Done" : "Active" }</span>
-            <span> {  focus }</span>
-            <span> {  priority }</span>
+            <span><strong> Due Date: </strong> { dueDate } </span>
+            <span> <strong>Title: </strong> { title }</span>
+            <span> <strong> Status: </strong> { completed ? "Done" : "Active" }</span>
+            <span> <strong> Mood: </strong> {  focus }</span>
+            <span> <strong> Priority: </strong> {  priority }</span>
         </div>
 
         {/* Notes Preview / Expanded*/}

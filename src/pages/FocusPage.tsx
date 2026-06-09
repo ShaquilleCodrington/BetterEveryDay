@@ -33,11 +33,16 @@ export default function FocusPage() {
 
   }
   return (
+    
     <main>
+
+     
 
 <Link to = "/">
         <button> Dashboard </button>
         </Link>
+
+      
 
       {/* if no activity is selected show focus/activity section */}
 
