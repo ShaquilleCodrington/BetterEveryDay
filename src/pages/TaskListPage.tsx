@@ -34,9 +34,7 @@ export default function TaskListPage(){
         <div style = {{ padding: "20px"}} >
             <h1> Task List </h1>
 
-        <Link to = "/">
-        <button> Dashboard </button>
-        </Link>
+      
 
             <div style = {{ marginTop: "20px"}}>
                 {tasks.map((task) => (

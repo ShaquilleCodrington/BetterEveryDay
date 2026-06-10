@@ -4,11 +4,10 @@ import {useEffect, useState} from "react"
 //custom type
 type ActivityPageProps = { 
   activityName: string;
-  onBack: () => void;
 };
 
 //function def
-function ActivityPage({ activityName, onBack }: ActivityPageProps) {
+function ActivityPage({ activityName }: ActivityPageProps) {
  
   const storageKey = `activity-notes-${activityName}`;
 
@@ -37,7 +36,6 @@ function ActivityPage({ activityName, onBack }: ActivityPageProps) {
 //return statement
 return (
   <section>
-    <button onClick={onBack}> Back </button>
 
     <h2> {activityName} </h2>
     <h3> Current Session </h3>

@@ -38,9 +38,6 @@ export default function FocusPage() {
 
      
 
-<Link to = "/">
-        <button> Dashboard </button>
-        </Link>
 
       
 

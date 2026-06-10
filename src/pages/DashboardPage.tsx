@@ -15,7 +15,8 @@ export default function DashboardPage() {
         <hr style = {{ margin: "30px 0"}} />
 
         <div style = {{ display: "flex",
-        justifyContent: "space-between" }}>
+        justifyContent: "space-around", 
+        alignItems: "flex-start", }}>
             <DashboardAccordion 
             title = "Congruence"
             preview = "Match your Task to your MOOD."
@@ -23,7 +24,7 @@ export default function DashboardPage() {
             "3 matching tasks available",
             "Last check-in: Today",]} 
         
-            pagePath = "/focus"/> 
+            pagePath = "/congruence"/> 
 
            <DashboardAccordion 
             title = "Task List"
