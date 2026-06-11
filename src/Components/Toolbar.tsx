@@ -9,7 +9,8 @@ return (
     justifyContent: "space-around",
     alignItems: "center",
     width: "100%",
-    padding: "10px 0",}}>
+    padding: "10px 0",
+    borderBottom: "1px solid black",}}>
        
 
         {/* Dashboard Button */}

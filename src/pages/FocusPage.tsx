@@ -67,7 +67,7 @@ export default function FocusPage() {
 {/* if an activity is selected show activity page */}
 {selectedActivity && (
   <ActivityPage activityName ={selectedActivity}
-  onBack = {() => setSelectedActivity("")} />
+  />
 )}
       
 
