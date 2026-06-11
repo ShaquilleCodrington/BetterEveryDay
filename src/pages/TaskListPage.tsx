@@ -1,9 +1,12 @@
 import TaskCard from "../Components/TaskCard";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import CreateTaskPopup from "../Components/CreateTaskPopup";
 
 export default function TaskListPage(){
 
-    const tasks = [
+
+      {/* Function to create new task  */}
+    const [ tasks, setTask ]  = useState([
         {
             id: 1,
             title: "Build TaskCard",
@@ -29,18 +32,37 @@ export default function TaskListPage(){
             dueDate: "May 22",
             updatedAt: "2026-05-17",
         },
-    ];
+    ]);
+
+    {/* Function to display tack creation pop up */}
+    const [ showCreateTaskPopup, setShowCreateTaskPopup ] = useState(false);
+
+         {/* Function handler for task creation */}
+         function handleCreateTask(newTask: any) {
+            setTask((prevTasks) => [newTask, ...prevTasks]);
+            setShowCreateTaskPopup(false);
+         }
+
     return (
+
         <div style = {{ padding: "20px"}} >
             <h1> Task List </h1>
 
+            <button onClick={() => setShowCreateTaskPopup(true)} >
+                + Create New Task </button>
       
+        { showCreateTaskPopup && 
+        <CreateTaskPopup onCreate={handleCreateTask}
+         onClose={() => setShowCreateTaskPopup(false)} />
+        }
 
             <div style = {{ marginTop: "20px"}}>
-                {tasks.map((task) => (
+                {   tasks.map((task) =>
+                 (
                     <TaskCard key = { task.id } 
                     {...task } />
-                ))}
+                ))
+                }
             </div>
         </div>
     );
