@@ -13,15 +13,17 @@ return (
     borderBottom: "1px solid black",}}>
        
 
+        {/* Back Button */}
+        <button onClick={() => navigate(-1)}> Back
+
+        </button>
+
         {/* Dashboard Button */}
       <Link to = "/">
         <button> Dashboard </button>
         </Link>
 
-        {/* Back Button */}
-        <button onClick={() => navigate(-1)}> Back
-
-        </button>
+       
        
 
         </div>

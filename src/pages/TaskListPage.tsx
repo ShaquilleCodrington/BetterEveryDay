@@ -1,45 +1,38 @@
 import TaskCard from "../Components/TaskCard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CreateTaskPopup from "../Components/CreateTaskPopup";
+import { defaultTask} from "../Data/tasks";
+
+import type { Task } from "../Data/tasks";
+
 
 export default function TaskListPage(){
 
 
       {/* Function to create new task  */}
-    const [ tasks, setTask ]  = useState([
-        {
-            id: 1,
-            title: "Build TaskCard",
-            notes: `Design from sketch
-            Implement accordion
-            Test preview lines
-            Works great`,
-            completed: false,
-            focus: "Focused",
-            priority: "High",
-            dueDate: "May 20",
-            updatedAt: "2026-05-18",
-        },
-        {
-            id: 2,
-            title: "Refactor Layout System",
-            notes: `Convert components to modular structure
-            Improve spacing system
-            Clean up styles`,
-            completed: true,
-            focus: "Deep Work",
-            priority: "Medium",
-            dueDate: "May 22",
-            updatedAt: "2026-05-17",
-        },
-    ]);
+    const [ tasks, setTask ] = useState<Task[]>(() => 
+    {
+        const savedTasks = localStorage.getItem("tasks");
+
+        if (savedTasks) {
+            return JSON.parse(savedTasks);
+    }
+
+        return defaultTask;
+});
+
+        useEffect(() => {
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }, [tasks]);
 
     {/* Function to display tack creation pop up */}
     const [ showCreateTaskPopup, setShowCreateTaskPopup ] = useState(false);
 
          {/* Function handler for task creation */}
-         function handleCreateTask(newTask: any) {
+         function handleCreateTask(newTask: Task) 
+         {
             setTask((prevTasks) => [newTask, ...prevTasks]);
+
             setShowCreateTaskPopup(false);
          }
 

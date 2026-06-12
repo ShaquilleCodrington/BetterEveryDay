@@ -5,7 +5,7 @@ type TaskCardProps = {
     title: string;
     notes: string;
     completed: boolean;
-    focus: string;
+    mood: string;
     priority: string;
     dueDate: string;
     updatedAt: string;
@@ -16,7 +16,7 @@ export default function TaskCard({
     title,
     notes,
     completed,
-    focus,
+    mood,
     priority,
     dueDate,
     updatedAt,
@@ -45,7 +45,7 @@ export default function TaskCard({
             <span><strong> Due Date: </strong> { dueDate } </span>
             <span> <strong>Title: </strong> { title }</span>
             <span> <strong> Status: </strong> { completed ? "Done" : "Active" }</span>
-            <span> <strong> Mood: </strong> {  focus }</span>
+            <span> <strong> Mood: </strong> {  mood }</span>
             <span> <strong> Priority: </strong> {  priority }</span>
         </div>
 

@@ -29,3 +29,15 @@ button {
   .logo{
     color:   #4f00c9
   }
+
+.state-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+  .state-card {
+      border: black solid 1px;
+      padding : 50px; 
+    border-radius: 10px;
+  }

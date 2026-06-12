@@ -11,7 +11,8 @@ export default function CreateTaskPopup ({
     
     const [ title, setTitle ] = useState("");
     const [ notes, setNotes ] = useState("");
-    const [ focus, setFocus ] = useState("Focused");
+    const [ mood, setMood ] = useState("Neutral");
+    const [ status, setStatus ] = useState("To Do");
     const [ priority, setPriority ] = useState("Medium");
     const [ dueDate, setDueDate ] = useState("");
 
@@ -21,7 +22,8 @@ export default function CreateTaskPopup ({
             title,
             notes,
             completed: false,
-            focus,
+            mood,
+            status,
             priority,
             dueDate,
             updatedAt: new Date().toLocaleDateString(),
@@ -70,10 +72,10 @@ export default function CreateTaskPopup ({
 
                     {/* To change Title */}
                     <div>
-                    <label> Focus  </label>
+                    <label> Mood  </label>
 
-                    <select value = { focus }
-                    onChange={(e) => setFocus(e.target.value)} >
+                    <select value = { mood }
+                    onChange={(e) => setMood(e.target.value)} >
                         <option value = "Focused"> Focused </option>
                         <option value = "Deep Work"> Deep Work </option>
                         <option value = "Chill"> Chill </option>
@@ -100,6 +102,19 @@ export default function CreateTaskPopup ({
                     type = "date"
                     value = { dueDate }
                     onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+                <br />
+
+                 {/* To change status*/}
+                <div>
+                    <label> Status </label>
+                   <select value = { status }
+                    onChange={(e) => setStatus(e.target.value)} >
+                        <option value = "Not Started"> Not Started </option>
+                        <option value = "In Progress"> In Progress </option>
+                        <option value = "Past Due"> Past Due </option>
+                        <option value = "Completed"> Completed </option>
+                    </select>
                 </div>
                 <br />
 
