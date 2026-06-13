@@ -1,71 +1,65 @@
 import { useState } from "react";
 
 type TaskCardProps = {
-    id: number;
-    title: string;
-    notes: string;
-    completed: boolean;
-    focus: string;
-    priority: string;
-    dueDate: string;
-    updatedAt: string;
+  id: number;
+  title: string;
+  notes: string;
+  completed: boolean;
+  focus: string;
+  priority: string;
+  dueDate: string;
+  updatedAt: string;
 };
 
 export default function TaskCard({
-    id,
-    title,
-    notes,
-    completed,
-    focus,
-    priority,
-    dueDate,
-    updatedAt,
+  title,
+  notes,
+  completed,
+  focus,
+  priority,
+  dueDate,
+  updatedAt,
 }: TaskCardProps) {
-    const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const lines = notes.split("\n");
+  const preview = lines.slice(0, 2);
 
-    const lines = notes.split("\n");
-    const preview = lines.slice(0, 2);
-
-    return (
-        <div 
-         style={{
-        border: "1px solid gray",
-        padding: "10px",
-        marginBottom: "10px",
-        cursor: "pointer",
-      }}
+  return (
+    <div className="glass-panel task-card">
+      <div
+        className="task-card-header"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        {/* Header Row */}
-        <div onClick = { () => setIsOpen(!isOpen)} 
-        style = {{ display : "flex",
-            gap: "10px",
-            cursor: "pointer",
-            fontWeight: 500, }}>
-
-            <span><strong> Due Date: </strong> { dueDate } </span>
-            <span> <strong>Title: </strong> { title }</span>
-            <span> <strong> Status: </strong> { completed ? "Done" : "Active" }</span>
-            <span> <strong> Mood: </strong> {  focus }</span>
-            <span> <strong> Priority: </strong> {  priority }</span>
-        </div>
-
-        {/* Notes Preview / Expanded*/}
-        {!isOpen &&
-        preview.map((line, index) => 
-        <p key = {index} > { line }</p>)}
-
-        {isOpen &&
-        lines.map((line, index ) => 
-        <p key = { index } > { line }</p>)}
-
-{/* updated At */}
-{isOpen && (
-    <div style = {{ marginTop: "10px", fontSize: "12px", opacity: 0.7}} >
-        Updated: { updatedAt}
-    </div>
-
-    )}
-
+        <span className="task-chip">
+          <strong>Due</strong> {dueDate}
+        </span>
+        <span className="task-chip">
+          <strong>Title</strong> {title}
+        </span>
+        <span className={`task-chip ${completed ? "task-status-done" : "task-status-active"}`}>
+          <strong>Status</strong> {completed ? "Done" : "Active"}
+        </span>
+        <span className="task-chip">
+          <strong>Mood</strong> {focus}
+        </span>
+        <span className="task-chip">
+          <strong>Priority</strong> {priority}
+        </span>
       </div>
-    );
+
+      {!isOpen &&
+        preview.map((line, index) => (
+          <p key={index} className="task-note-line">{line}</p>
+        ))}
+
+      {isOpen &&
+        lines.map((line, index) => (
+          <p key={index} className="task-note-line">{line}</p>
+        ))}
+
+      {isOpen && (
+        <div className="task-updated">Updated: {updatedAt}</div>
+      )}
+    </div>
+  );
 }

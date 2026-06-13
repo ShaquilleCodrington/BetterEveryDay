@@ -1,77 +1,67 @@
-//Imports
 import { useState } from "react";
-import { statesData} from "../statesData";
-import  ActivityPage  from  "../pages/ActivityPage"
-import { Link } from "react-router-dom";
-
-
-//This is where:components state rendering buttons activities will live.
+import { statesData } from "../statesData";
+import ActivityPage from "../pages/ActivityPage";
 
 export default function FocusPage() {
-
-  
-  
-  const [selectedFocus,setSelectedFocus] = useState("");
+  const [selectedFocus, setSelectedFocus] = useState("");
   const [selectedActivity, setSelectedActivity] = useState("");
-  
-  const focusedState = statesData.focused;
-  let currentActivities : string[] = [];
 
-  //switch for activities
-  switch (selectedFocus)
-  {
+  const focusedState = statesData.focused;
+  let currentActivities: string[] = [];
+
+  switch (selectedFocus) {
     case "Momentum Builder":
       currentActivities = focusedState.activities.momentumBuilder;
       break;
-      case "Light Focus":
-        currentActivities =focusedState.activities.lightFocus;
-        break;
-        case "Deep Focus":
-          currentActivities = focusedState.activities.deepFocus;
-          break;
-
-
+    case "Light Focus":
+      currentActivities = focusedState.activities.lightFocus;
+      break;
+    case "Deep Focus":
+      currentActivities = focusedState.activities.deepFocus;
+      break;
   }
+
   return (
-    
-    <main>
-
-     
-
-
-      
-
-      {/* if no activity is selected show focus/activity section */}
-
+    <div>
       {!selectedActivity && (
         <>
-      <h1> {focusedState.name} </h1>
-      <ul> {focusedState.identity.map((statement) => 
-      (
-        <li key={statement}> {statement} </li>
-      ))} </ul>
+          <h1>{focusedState.name}</h1>
+          <hr />
+          <ul className="identity-list">
+            {focusedState.identity.map((statement) => (
+              <li key={statement}>{statement}</li>
+            ))}
+          </ul>
 
-      <h2> What Would You Like To Do </h2>
+          <div className="section-heading">What would you like to do?</div>
+          <div className="focus-mode-row">
+            <button onClick={() => setSelectedFocus("Momentum Builder")}>Momentum Builder</button>
+            <button onClick={() => setSelectedFocus("Light Focus")}>Light Focus</button>
+            <button onClick={() => setSelectedFocus("Deep Focus")}>Deep Focus</button>
+          </div>
 
-      <button onClick={() => setSelectedFocus("Momentum Builder")} > Momentum Builder </button>
-      <button onClick={() =>setSelectedFocus("Light Focus")}> Light Focus </button>
-      <button onClick = {() => setSelectedFocus("Deep Focus")} > Deep Focus </button>
+          {selectedFocus && (
+            <>
+              <div className="section-heading">{selectedFocus}</div>
+              <div className="activity-list">
+                {currentActivities.map((activity) => (
+                  <button
+                    key={activity}
+                    className="activity-btn"
+                    onClick={() => setSelectedActivity(activity)}
+                  >
+                    {activity}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
-<h3> {selectedFocus} </h3>
-<div> {currentActivities.map((activity) =>
-<button key = {activity} onClick ={() => setSelectedActivity(activity)} 
-> {activity} </button>
-)}</div>
-</>
-)}
-{/* if an activity is selected show activity page */}
-{selectedActivity && (
-  <ActivityPage activityName ={selectedActivity}
-  />
-)}
-      
-
-      </main>
+      {selectedActivity && (
+        <ActivityPage activityName={selectedActivity} />
+      )}
+    </div>
   );
 }
-

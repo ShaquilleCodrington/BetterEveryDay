@@ -1,31 +1,239 @@
-button {
-  width: 140px;
-  height: 40px;
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — change anything here to restyle the whole app
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
 
+  /* ── Color Palette ──────────────────────────────────────────────────────
+     Swap these base values to shift the entire color scheme.
+     e.g. change --hue to 260 for purple, 200 for cyan, 160 for green       */
+  --hue: 225;                          /* base hue for accent color          */
+  --hue-sat: 70%;                      /* saturation of accent               */
 
-  border: black solid 1px;
-  border-radius: 8px;
+  /* Background */
+  --bg-base:          #07041a;         /* page background                    */
+  --bg-sidebar:       rgba(15, 10, 40, 0.75);
+  --bg-toolbar:       rgba(15, 10, 40, 0.55);
+  --bg-panel:         rgba(30, 20, 70, 0.45);
+  --bg-panel-hover:   rgba(60, 40, 120, 0.50);
+  --bg-input:         rgba(255, 255, 255, 0.07);
+  --bg-input-focus:   rgba(255, 255, 255, 0.10);
+  --bg-btn:           rgba(100, 140, 255, 0.14);
+  --bg-btn-hover:     rgba(120, 160, 255, 0.24);
+  --bg-btn-active:    rgba(120, 160, 255, 0.32);
+  --bg-btn-primary:   rgba(120, 160, 255, 0.28);
 
-  cursor: pointer;
+  /* Text */
+  --text-base:        rgba(255, 255, 255, 0.88);
+  --text-muted:       rgba(255, 255, 255, 0.68);
+  --text-faint:       rgba(255, 255, 255, 0.48);
+  --text-label:       rgba(180, 205, 255, 0.60);
+  --text-heading:     rgba(255, 255, 255, 0.97);
+  --text-h2:          rgba(220, 235, 255, 0.92);
+  --text-h3:          rgba(210, 228, 255, 0.95);
+  --text-logo:        rgba(200, 220, 255, 0.85);
 
-  font-size: 16px;
-  font-weight: 560;
+  /* Borders */
+  --border-panel:     rgba(180, 200, 255, 0.16);
+  --border-panel-hover: rgba(180, 210, 255, 0.32);
+  --border-sidebar:   rgba(180, 200, 255, 0.12);
+  --border-toolbar:   rgba(180, 200, 255, 0.12);
+  --border-input:     rgba(255, 255, 255, 0.18);
+  --border-input-focus: rgba(160, 200, 255, 0.55);
+  --border-btn:       rgba(160, 190, 255, 0.35);
+  --border-btn-hover: rgba(180, 210, 255, 0.60);
+  --border-btn-primary: rgba(160, 200, 255, 0.50);
+  --border-hr:        rgba(255, 255, 255, 0.12);
 
-  transition: all 0.2s ease;
+  /* Accent / Glow */
+  --accent-glow-btn:      rgba(120, 160, 255, 0.08);
+  --accent-glow-btn-hover: rgba(120, 160, 255, 0.20);
+  --accent-glow-input:    rgba(120, 170, 255, 0.15);
+  --accent-glow-panel:    rgba(120, 160, 255, 0.10);
+  --accent-glow-primary:  rgba(120, 160, 255, 0.20);
+  --accent-text-btn:      rgba(200, 220, 255, 0.90);
+  --accent-sidebar-btn-hover-bg: rgba(140, 170, 255, 0.14);
+  --accent-sidebar-btn-hover-border: rgba(160, 195, 255, 0.25);
+  --accent-sidebar-btn-hover-glow: rgba(120, 160, 255, 0.10);
 
-  background-color:   #3d2297;
-  color: #fcfcfd;
+  /* Status colors */
+  --status-done:      rgba(140, 220, 160, 0.85);
+  --status-active:    rgba(180, 210, 255, 0.90);
 
+  /* ── Radii ──────────────────────────────────────────────────────────────
+     Change these to go sharper (4px) or more rounded (16px+)               */
+  --radius-panel:     12px;            /* cards, accordions                  */
+  --radius-popup:     16px;            /* modal popup                        */
+  --radius-btn:       7px;             /* buttons                            */
+  --radius-input:     7px;             /* inputs, selects, textareas         */
+  --radius-sidebar-btn: 7px;          /* sidebar nav buttons                */
+
+  /* ── Blur / Glass ───────────────────────────────────────────────────────
+     Higher = more frosted. 0px = no blur (flat look)                       */
+  --blur-panel:       16px;
+  --blur-sidebar:     20px;
+  --blur-toolbar:     16px;
+  --blur-popup-overlay: 6px;
+
+  /* ── Spacing ────────────────────────────────────────────────────────────
+     Base unit for consistent padding/gap scaling                            */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   14px;
+  --space-lg:   20px;
+  --space-xl:   28px;
+
+  /* Panel padding */
+  --panel-padding:    18px 20px;       /* accordion & task cards             */
+  --popup-padding:    26px;            /* modal window                       */
+  --page-padding:     28px;            /* page content area                  */
+  --sidebar-padding:  20px 14px;
+  --toolbar-padding:  12px 20px;
+
+  /* ── Sidebar width ──────────────────────────────────────────────────────*/
+  --sidebar-width:    180px;
+
+  /* ── Card width ─────────────────────────────────────────────────────────*/
+  --card-width:       340px;           /* dashboard accordion cards          */
+  --popup-width:      460px;           /* create task popup                  */
+  --activity-width:   520px;           /* activity page max-width            */
+
+  /* ── Typography ─────────────────────────────────────────────────────────*/
+  --font-base:        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-base:   14px;
+  --font-size-sm:     12px;
+  --font-size-xs:     11px;
+  --font-size-label:  9px;
+  --font-size-h1:     22px;
+  --font-size-h2:     16px;
+  --font-size-h3:     13px;
+  --font-size-logo:   11px;
+
+  /* ── Shadows ────────────────────────────────────────────────────────────*/
+  --shadow-panel:     0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-panel-hover: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 24px rgba(120, 160, 255, 0.10);
+  --shadow-sidebar:   2px 0 24px rgba(0, 0, 0, 0.40);
+  --shadow-toolbar:   0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-btn-primary: 0 0 18px rgba(120, 160, 255, 0.20);
+  --shadow-btn-primary-hover: 0 0 28px rgba(120, 160, 255, 0.30);
 }
-  button:hover {
-    transform: translateY(-3px);
-    opacity: 0.9;
-  }
 
-  button:active {
-    transform: translateY(3px);
-  }
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-  .logo{
-    color:   #4f00c9
-  }
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-base);
+  font-family: var(--font-base);
+  font-size: var(--font-size-base);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1 { font-size: var(--font-size-h1); font-weight: 600; letter-spacing: 0.04em; color: var(--text-heading); }
+h2 { font-size: var(--font-size-h2); font-weight: 500; letter-spacing: 0.04em; color: var(--text-h2); }
+h3 { font-size: var(--font-size-h3); font-weight: 600; letter-spacing: 0.05em; color: var(--text-h3); }
+
+p {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+a { text-decoration: none; color: inherit; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-hr);
+  margin: 24px 0;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-base);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent-text-btn);
+  background: var(--bg-btn);
+  border: 1px solid var(--border-btn);
+  border-radius: var(--radius-btn);
+  padding: 7px 16px;
+  height: auto;
+  width: auto;
+  min-width: 100px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+  white-space: nowrap;
+  box-shadow: 0 0 10px var(--accent-glow-btn), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+button:hover {
+  color: #fff;
+  border-color: var(--border-btn-hover);
+  background: var(--bg-btn-hover);
+  box-shadow: 0 0 18px var(--accent-glow-btn-hover), inset 0 1px 0 rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+
+button:active {
+  background: var(--bg-btn-active);
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+input, textarea, select {
+  font-family: var(--font-base);
+  font-size: var(--font-size-sm);
+  color: var(--text-base);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-input);
+  padding: 8px 11px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.03em;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--border-input-focus);
+  background: var(--bg-input-focus);
+  box-shadow: 0 0 12px var(--accent-glow-input);
+}
+
+input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, 0.28); }
+
+select option { background: #0d0a2a; color: var(--text-base); }
+
+label {
+  display: block;
+  font-size: var(--font-size-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-label);
+  margin-bottom: 6px;
+}
+
+textarea { resize: vertical; line-height: 1.5; }
+
+.logo {
+  font-size: var(--font-size-logo);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-logo);
+}
