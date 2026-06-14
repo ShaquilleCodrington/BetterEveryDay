@@ -3,60 +3,69 @@ import { useEffect, useState } from "react";
 import CreateTaskPopup from "../Components/CreateTaskPopup";
 import { defaultTask} from "../Data/tasks";
 
+
 import type { Task } from "../Data/tasks";
+import { loadTasks, saveTasks } from "../Data/taskStorage";
 
 
 export default function TaskListPage(){
 
 
-      {/* Function to create new task  */}
-    const [ tasks, setTask ] = useState<Task[]>(() => 
-    {
-        const savedTasks = localStorage.getItem("tasks");
+            {/* Function to create new task  */}
+            const [ tasks, setTask ] = useState<Task[]>(() => 
+            {
+                const savedTasks = loadTasks();
 
-        if (savedTasks) {
-            return JSON.parse(savedTasks);
-    }
+                if (savedTasks.length >0) {
+                    return (savedTasks);
+            }
 
-        return defaultTask;
-});
+                return defaultTask;
+        });
 
+
+            // ======================================================
+            // Save Tasks Whenever They Change
+            // 
         useEffect(() => {
-            localStorage.setItem("tasks", JSON.stringify(tasks));
+            saveTasks(tasks);
         }, [tasks]);
+
 
     {/* Function to display tack creation pop up */}
     const [ showCreateTaskPopup, setShowCreateTaskPopup ] = useState(false);
 
-         {/* Function handler for task creation */}
-         function handleCreateTask(newTask: Task) 
-         {
-            setTask((prevTasks) => [newTask, ...prevTasks]);
+            {/* Function handler for task creation */}
+            function handleCreateTask(newTask: Task) 
+            {
+                setTask((prevTasks) => [newTask, ...prevTasks]);
 
-            setShowCreateTaskPopup(false);
-         }
+                setShowCreateTaskPopup(false);
+            }
 
     return (
 
         <div style = {{ padding: "20px"}} >
+
             <h1> Task List </h1>
 
             <button onClick={() => setShowCreateTaskPopup(true)} >
                 + Create New Task </button>
       
-        { showCreateTaskPopup && 
-        <CreateTaskPopup onCreate={handleCreateTask}
-         onClose={() => setShowCreateTaskPopup(false)} />
-        }
+            { showCreateTaskPopup && 
+            
+            <CreateTaskPopup onCreate={handleCreateTask}
+            onClose={() => setShowCreateTaskPopup(false)} />
+            }
 
-            <div style = {{ marginTop: "20px"}}>
-                {   tasks.map((task) =>
-                 (
-                    <TaskCard key = { task.id } 
-                    {...task } />
-                ))
-                }
-            </div>
+                <div style = {{ marginTop: "20px"}}>
+                    {   tasks.map((task) =>
+                    (
+                        <TaskCard key = { task.id } 
+                        {...task } />
+                    ))
+                    }
+                </div>
         </div>
     );
 }

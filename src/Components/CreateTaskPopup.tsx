@@ -1,8 +1,9 @@
 import { useState } from "react";
+import type { Task } from "../Data/tasks";
 
 type CreateTaskPopupProps = {
     onClose: () => void;
-    onCreate: (task: any) => void;
+    onCreate: (task: Task) => void;
 };
 
 export default function CreateTaskPopup ({ 
