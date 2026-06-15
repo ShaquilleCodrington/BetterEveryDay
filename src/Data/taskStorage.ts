@@ -92,3 +92,57 @@ export function getTaskCountByMood( mood: string ): number
 {
     return getTasksByMood(mood).length;
 }
+
+/**
+ * Returns a new array sorted by due date.
+ * Tasks without a due date are placed at the end.
+ */
+
+export function sortTaskByDueDate(task: Task[]): Task[]
+{
+    return [...task].sort((a, b) =>
+    {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+
+        return (
+            new Date(a.dueDate).getTime() - 
+                    new Date(b.dueDate).getTime()
+        );
+    })
+}
+
+
+/**
+ * Returns the top N upcoming tasks sorted by due date.
+ * Defaults to the first task.
+ */
+
+export function getUpcomingTasks(
+    task: Task[],
+    count: number = 1,
+    includeCompleted: boolean = false
+): Task[] {
+
+    const filtered = 
+        includeCompleted ? task : task.filter(task => !task.completed);
+
+        return sortTaskByDueDate(filtered).slice(0, count);
+}
+
+/**
+ * Returns the title of the next upcoming task.
+ * Returns a default message if no tasks exist.
+ */
+
+export function getUpcomingTaskTitle(
+    task: Task[],
+    ): string
+    {
+        const nextTask =  getUpcomingTasks(task,)[0];
+        return nextTask ? nextTask.title : "No Upcomming Task";
+
+    }
+
+

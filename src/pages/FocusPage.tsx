@@ -4,7 +4,7 @@ import { statesData} from "../statesData";
 import  ActivityPage  from  "../pages/ActivityPage"
 import  TaskCard  from "../Components/TaskCard";
 import type { Task } from "../Data/tasks";
-import { getTasksByMood } from "../Data/taskStorage"
+import { getTaskCountByMood, getTasksByMood } from "../Data/taskStorage"
 
 
 //This is where:components state rendering buttons activities will live.
@@ -25,9 +25,9 @@ export default function FocusPage() {
 
         useEffect(() => {
 
-            setFocusedTasks(getTasksByMood(focusedState.name));
+            setFocusedTasks(getTasksByMood("Focused"));
 
-        }, [focusedState.name]);
+        }, []);
 
 
    
@@ -77,7 +77,7 @@ export default function FocusPage() {
                   <h2> Focused Tasks </h2>
 
                            {/*if no focused task show   */}
-                  { focusedTasks.length == 0 ? 
+                  { getTaskCountByMood("Focused") == 0 ? 
                   ( <p> No Focused Task Avaliable. </p>) :
 
                                //else show this

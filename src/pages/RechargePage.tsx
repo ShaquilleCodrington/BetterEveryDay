@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import  TaskCard  from "../Components/TaskCard";
 import type { Task } from "../Data/tasks";
-import { getTasksByMood } from "../Data/taskStorage"
+import { getTasksByMood, getTaskCountByMood } from "../Data/taskStorage"
 
 
 //This is where:components state rendering buttons activities will live.
@@ -41,7 +41,7 @@ export default function RechargePage() {
                   <h2> Recharge Tasks </h2>
 
                            {/*if no focused task show   */}
-                  { rechargeTasks.length == 0 ? 
+                  { getTaskCountByMood("Recharge") == 0 ? 
                   ( <p> No Planning Task Avaliable. </p>) 
                   : (
 

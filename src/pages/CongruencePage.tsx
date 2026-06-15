@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { getTaskCountByMood} from "../Data/taskStorage"
+import { getTaskCountByMood, getTasksByMood, getUpcomingTasks, getUpcomingTaskTitle} from "../Data/taskStorage"
 
 
 export default function CongruencePage() {
@@ -11,9 +11,9 @@ export default function CongruencePage() {
                     title: "Focused",
                     description: "Ready for Deep work that moves the needle.",
                     
-                    lastSession: "No Sessions Yet",
+                    lastSession: `${getUpcomingTaskTitle(getTasksByMood("Focused"))}`,
                     readyTasks: `${getTaskCountByMood("Focused")} Task/s`,
-                    nextTask: "No Focus Tasks",
+                    nextTask: `${getUpcomingTaskTitle(getTasksByMood("Focused"))}`,
 
                     buttonText: "Enter Focus",
                     route: "/focus",
@@ -23,9 +23,9 @@ export default function CongruencePage() {
                     title: "Planning",
                     description: "Organize ideas and prepare for execution.",
 
-                    lastSession: "No Sessions Yet",
+                    lastSession: `${getUpcomingTaskTitle(getTasksByMood("Planning"))}`,
                     readyTasks: `${getTaskCountByMood("Planning")} Task/s`,
-                    nextTask: "No Planning Tasks",
+                    nextTask: `${getUpcomingTaskTitle(getTasksByMood("Planning"))}`,
 
                     buttonText: "Start Planning",
                     route: "/planning",
@@ -36,9 +36,9 @@ export default function CongruencePage() {
                     description:
                     "Recover energy while staying engaged through reflection, learning, or light creative work.",
 
-                    lastSession: "No Sessions Yet",
+                    lastSession: `${getUpcomingTaskTitle(getTasksByMood("Recharge"))}`,
                     readyTasks: `${getTaskCountByMood("Recharge")} Task/s`,
-                    nextTask: "No Recharge Tasks",
+                    nextTask:  `${getUpcomingTaskTitle(getTasksByMood("Recharge"))}`,
 
                     buttonText: "Begin Recharge",
                     route: "/recharge",
