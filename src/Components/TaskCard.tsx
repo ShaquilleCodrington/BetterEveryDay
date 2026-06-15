@@ -9,6 +9,8 @@ type TaskCardProps = {
     priority: string;
     dueDate: string;
     updatedAt: string;
+
+    onDelete: () => void;
 };
 
 export default function TaskCard({
@@ -20,7 +22,9 @@ export default function TaskCard({
     priority,
     dueDate,
     updatedAt,
-}: TaskCardProps) {
+    onDelete,
+             }: TaskCardProps) 
+{
     const [isOpen, setIsOpen] = useState(false);
 
     const lines = notes.split("\n");
@@ -62,8 +66,13 @@ export default function TaskCard({
 {isOpen && (
     <div style = {{ marginTop: "10px", fontSize: "12px", opacity: 0.7}} >
         Updated: { updatedAt}
+        <button onClick = { onDelete}>
+        
+    Delete Task
+</button>
     </div>
 
+    
     )}
 
       </div>

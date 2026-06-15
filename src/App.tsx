@@ -5,6 +5,9 @@ import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
 import CongruencePage from "./pages/CongruencePage";
 import Toolbar from "./Components/Toolbar";
+import PlanningPage from "./pages/PlanningPage"
+import RechargePage from "./pages/RechargePage";
+
 
 function App(){
   return (
@@ -28,6 +31,8 @@ function App(){
       <Route path = "/" element = {<DashboardPage />} />
       <Route path = "/task" element = { <TaskListPage />} />
       <Route path = "/focus" element = {<FocusPage />} />
+      <Route path ="/planning" element = { <PlanningPage />} />
+      <Route path ="/Recharge" element = { <RechargePage />} />
       <Route path = "/congruence" element = {<CongruencePage />} />
 
 

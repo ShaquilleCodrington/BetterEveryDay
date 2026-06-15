@@ -78,3 +78,17 @@ export function clearTasks(): void
 {
     localStorage.removeItem(STORAGE_KEY);
 }
+
+///helper functions
+
+//get mood specfic task
+export function getTasksByMood(mood: string): Task[]
+{
+    return loadTasks().filter(task => task.mood === mood);
+}
+
+//get number of mood specfic task
+export function getTaskCountByMood( mood: string ): number
+{
+    return getTasksByMood(mood).length;
+}

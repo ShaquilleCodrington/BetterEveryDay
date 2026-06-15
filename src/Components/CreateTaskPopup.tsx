@@ -12,7 +12,7 @@ export default function CreateTaskPopup ({
     
     const [ title, setTitle ] = useState("");
     const [ notes, setNotes ] = useState("");
-    const [ mood, setMood ] = useState("Neutral");
+    const [ mood, setMood ] = useState("Focused");
     const [ status, setStatus ] = useState("To Do");
     const [ priority, setPriority ] = useState("Medium");
     const [ dueDate, setDueDate ] = useState("");
@@ -78,8 +78,8 @@ export default function CreateTaskPopup ({
                     <select value = { mood }
                     onChange={(e) => setMood(e.target.value)} >
                         <option value = "Focused"> Focused </option>
-                        <option value = "Deep Work"> Deep Work </option>
-                        <option value = "Chill"> Chill </option>
+                        <option value = "Planning"> Planning </option>
+                        <option value = "Recharge"> Recharge </option>
                     </select>
                 </div>
                 <br />
