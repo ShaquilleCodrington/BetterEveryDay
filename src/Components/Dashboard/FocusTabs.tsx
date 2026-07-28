@@ -13,8 +13,8 @@ interface FocusTab
 // No Calendar, no Habits — those features don't exist yet.
 const FOCUS_TABS: FocusTab[] =
 [
-    { id: "home", label: "Home", path: "/" },
-    { id: "tasks", label: "Tasks", path: "/task" },
+    { id: "home", label: "Dashboard", path: "/" },
+    { id: "task", label: "Task List", path: "/task" },
     { id: "congruence", label: "Congruence", path: "/congruence" },
     { id: "notes", label: "Notes", path: "/notebook" },
     { id: "journey", label: "Journey", path: "/journeyPreview" },
