@@ -6,14 +6,20 @@ Built with React, TypeScript, Vite, and Electron, the application combines a mod
 
 ---
 
+## Beta Status
+
+BetterEveryDay is currently in active beta development. New features, improvements, and bug fixes are released regularly as we continue refining the application based on user feedback. Every release is focused on improving stability, usability, and creating a better productivity experience.
+
+---
+
+
+## Releases
+
+The latest stable release can always be downloaded from the GitHub Releases page. Existing desktop installations automatically receive updates through the built-in update system whenever a newer version is published.
+
+---
+
 ## Current Features
-
-### Desktop Application
-
-* Electron desktop integration
-* Native desktop window
-* React application hosted inside Electron
-* Integrated desktop development workflow using `npm run dashboard`
 
 ### Productivity Features
 
@@ -21,10 +27,26 @@ Built with React, TypeScript, Vite, and Electron, the application combines a mod
 * Congruence-based focus mode selection
 * Dynamic activity pages
 * Task management foundation
+* Notebook and Journey organization
+* Folder-based Notebook Browser
+* Folder-based Journey Browser
 * Persistent notes using Local Storage
 * Dynamic task previews
 * React Router navigation
 * Responsive desktop interface
+
+
+### Desktop Application
+
+
+* Windows installer with automatic updates
+* Floating timer window
+* Adjustable countdown timer
+* Electron desktop integration
+* Native desktop window
+* React application hosted inside Electron
+* Built-in automatic update system
+* Integrated desktop development workflow using `npm run dashboard`
 
 ---
 
@@ -40,10 +62,12 @@ Built with React, TypeScript, Vite, and Electron, the application combines a mod
 ### Desktop
 
 * Electron
+* Electron Builder
 
 ### Storage
 
-* Local Storage
+* Local Storage (Current)
+* SQLite (Planned)
 
 ---
 
@@ -67,6 +91,18 @@ This command will:
 * Wait for the server to become available
 * Launch the Electron desktop application
 
+Create a production installer:
+
+```bash
+npm run installer
+```
+
+Publish a production release with automatic updates:
+
+```bash
+npm run installer:publish
+```
+
 ---
 
 ## Project Structure
@@ -79,7 +115,7 @@ src/
     Components/
     Css/
     Data/
-    pages/
+    Features/
     App.tsx
     main.tsx
 
@@ -89,25 +125,46 @@ backend/
 
 ---
 
+
 ## Roadmap
 
 ### In Progress
 
+* Beta testing
 * Code documentation and comments
 * Improved project documentation
-* Electron desktop foundation
+* User interface polish
+* Performance improvements
 
-### Planned Features
 
-* Floating timer window
-* Adjustable countdown timer
+
+#### Productivity
+
+
 * Focus session tracking
 * Session history
+* Calendar integration
+* Habit tracking improvements
+
+#### Desktop
+
 * Native desktop notifications
 * System tray integration
 * Multiple Electron windows
-* Backend integration
+
+#### Backend
+
+* SQLite database integration
+* Backend services
+* Cloud synchronization
 * Cross-platform application packaging
+
+#### Future
+
+* Local AI productivity tools
+* Better Every Day Office
+* Team collaboration features
+* Productivity analytics
 
 ---
 
