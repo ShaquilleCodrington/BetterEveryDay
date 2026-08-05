@@ -8,12 +8,15 @@ By bringing together notes, tasks, journeys, focus sessions, and productivity to
 
 ---
 
-# ⬇ Download Better Every Day
+# ⬇ Use Better Every Day
 
-The latest beta version is always available from the **GitHub Releases** page.
 
-**Download the latest release:**
-➡️ **<GitHub Releases Link> https://github.com/ShaquilleCodrington/BetterEveryDay/releases**
+#### ➡️Try Better Every Day online at 
+* https://bettereveryday-95y.pages.dev
+
+**➡️Download the latest release:**
+ <GitHub Releases Link> 
+* https://github.com/ShaquilleCodrington/BetterEveryDay/releases*
 
 ### Current Beta
 
@@ -21,6 +24,9 @@ The latest beta version is always available from the **GitHub Releases** page.
 * ✅ Automatic Updates
 * ✅ Free During Beta
 * ✅ Active Development
+
+
+The latest beta version is always available from the **GitHub Releases** page.
 
 Once installed, Better Every Day will automatically notify you whenever a new version is available.
 
