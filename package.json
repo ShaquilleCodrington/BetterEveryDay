@@ -2,7 +2,7 @@
   "name": "BetterEveryDay",
   "productName": "BetterEveryDay",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "main": "electron/main.js",
   "description": "A personal productivity app for tracking journeys, sessions, and tasks.",
@@ -40,8 +40,8 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "Cos229-239",
-      "repo": "2606_Team01"
+      "owner": "ShaquilleCodrington",
+      "repo": "BetterEveryDay"
     }
   },
   "dependencies": {

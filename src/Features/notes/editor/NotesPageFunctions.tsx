@@ -49,17 +49,17 @@ export function useNotesPageFunctions({
     const [selectedFolderId, setSelectedFolderId] =
         useState<string | null>(null);
 
-    const selectedFolder =
-        folders.find(
-            (folder) =>
-                folder.id === selectedFolderId
-        );
+    // const selectedFolder =
+    //     folders.find(
+    //         (folder) =>
+    //             folder.id === selectedFolderId
+    //     );
 
-    const folderNotebooks =
-            notebooks.filter(
-                (notebook) =>
-                    notebook.folderId === selectedFolderId
-            );
+    // const folderNotebooks =
+    //         notebooks.filter(
+    //             (notebook) =>
+    //                 notebook.folderId === selectedFolderId
+    //         );
 
 
     // ==================================================
