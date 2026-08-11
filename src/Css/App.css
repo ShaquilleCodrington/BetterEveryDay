@@ -24,18 +24,55 @@
   box-shadow: inset -1px 0 0 rgba(255,255,255,0.04), var(--shadow-sidebar);
   height: 100vh;
   overflow: hidden;
+  transition: width 0.2s ease, padding 0.2s ease;
 }
 
+
+
+/* CHANGED: new block — collapsed sidebar state */
+.sidebar.sidebar--collapsed {
+  width: 60px;
+  padding-left: var(--space-xs);
+  padding-right: var(--space-xs);
+}
+
+/* CHANGED: new block — center icons, tighten padding when collapsed */
+.sidebar.sidebar--collapsed .sidebar-btn {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+
+/* CHANGED: was ".sidebar.sidebar--collapsed .sidebar-logo" — now targets the row,
+   and centers the toggle button when the logo text is hidden */
+.sidebar.sidebar--collapsed .sidebar-logo-row {
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+  justify-content: center;
+}
+
+/* CHANGED: margin-bottom / padding-bottom / border-bottom removed from here —
+   moved up to .sidebar-logo-row above, since the border now spans the whole row */
 .sidebar-logo {
   font-size: var(--font-size-logo);
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-logo);
+  text-shadow: 0 0 20px rgba(160, 190, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+
+/* CHANGED: new block — row that holds the toggle button + logo side by side */
+.sidebar-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: var(--space-xl);
   padding-bottom: var(--space-lg);
   border-bottom: 1px solid var(--border-sidebar);
-  text-shadow: 0 0 20px rgba(160, 190, 255, 0.4);
 }
 
 .sidebar-nav {
@@ -44,10 +81,10 @@
   gap: var(--space-xs);
   flex: 1;
 }
-
 .sidebar-btn {
   display: flex;
   align-items: center;
+  gap: 10px; /* CHANGED: spacing between icon and label */
   width: 100%;
   min-width: unset;
   text-align: left;
@@ -63,6 +100,19 @@
   transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
+/* CHANGED: new block — icon sizing/centering inside sidebar buttons */
+.sidebar-btn-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CHANGED: new block — label text handling */
+.sidebar-btn-label {
+  white-space: nowrap;
+  overflow: hidden;
+}
 .sidebar-btn:hover {
   color: rgba(230, 242, 255, 0.97);
   background: var(--accent-sidebar-btn-hover-bg);
@@ -94,6 +144,19 @@
   -webkit-backdrop-filter: blur(var(--blur-toolbar));
   border-bottom: 1px solid var(--border-toolbar);
   box-shadow: 0 1px 0 rgba(255,255,255,0.04), var(--shadow-toolbar);
+  flex-shrink: 0;
+}
+
+
+
+/* CHANGED: new block — style for the PanelLeft toggle button */
+.toolbar-icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 

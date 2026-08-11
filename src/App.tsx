@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -16,17 +17,21 @@ import NotesPage from "./pages/NotesPage";
 import JourneyPage from "./pages/JourneyPage";
 import ProfilePage from "./pages/ProfilePage";
 import HelpPage from "./pages/HelpPage";
-// CHANGED: added import for JourneyPreview so it can be
-// used as a nested route element.
 import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
 import "./Css/App.css";
 
 
 function MainLayout()
 {
+
+   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   return(
     <div className="app-shell">
-      <Sidebar />
+    <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+      />
 
       <div className="main-content">
         <Toolbar />

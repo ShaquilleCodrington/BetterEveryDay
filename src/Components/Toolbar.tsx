@@ -70,11 +70,13 @@ function ProfileButton() {
     </Tooltip>
   );
 }
-
+// CHANGED: reverted — Toolbar no longer needs collapsed/onToggleSidebar props
 export default function Toolbar() {
   const navigate = useNavigate();
   return (
     <div className="toolbar">
+
+      {/* CHANGED: removed the PanelLeft toggle button block that was here — moved to Sidebar.tsx */}
 
       {/* Profile button */}
       <ProfileButton />

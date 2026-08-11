@@ -17,7 +17,6 @@
     "package": "npm run build && electron-builder --dir",
     "installer": "npm run build && electron-builder --win",
     "installer:publish": "npm run build && electron-builder --win --publish always"
-
   },
   "build": {
     "appId": "com.bettereveryday.app",
@@ -46,6 +45,7 @@
   },
   "dependencies": {
     "electron-updater": "^6.3.9",
+    "lucide-react": "^1.31.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.1"
