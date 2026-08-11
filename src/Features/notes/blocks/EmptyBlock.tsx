@@ -56,6 +56,11 @@ export default function EmptyBlock({
         ref.current.style.height = ref.current.scrollHeight + "px";
     }
 
+        useEffect(() => {
+        resize();
+    }, [value]);
+
+
     function change(e: React.ChangeEvent<HTMLTextAreaElement>) {
         setValue(e.target.value);
         resize();
@@ -129,7 +134,8 @@ export default function EmptyBlock({
                         onKeyDown={keyDown}
                         style={{
                             width: "100%",
-                            minHeight: 30,
+                            minHeight: 30, 
+                            overflow: "hidden",
                             border: "none",
                             outline: "none",
                             resize: "none",
