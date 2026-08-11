@@ -33,7 +33,9 @@ export default function FocusTabs()
         <div
             style={{
                 display: "flex",
+                flexWrap: "wrap", 
                 gap: "8px",
+                rowGap: "8px",
                 marginBottom: "20px",
             }}
         >
@@ -47,8 +49,10 @@ export default function FocusTabs()
                         key={tab.id}
                         onClick={() => navigate(tab.path)}
                         style={{
-                            padding: "18px 40px",
-                            fontSize: "1.1rem",
+                             padding: "clamp(10px, 1.6vw, 18px) clamp(16px, 4vw, 40px)",
+                            fontSize: "clamp(0.85rem, 1.6vw, 1.1rem)",
+                            flexShrink: 0,          
+                            whiteSpace: "nowrap",
                             borderRadius: "8px 8px 0 0",
                             cursor: "pointer",
                             fontWeight: isActive ? "bold" : "normal",

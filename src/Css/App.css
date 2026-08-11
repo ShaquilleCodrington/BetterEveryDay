@@ -138,6 +138,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
+  flex-wrap: wrap;           
+  row-gap: var(--space-sm); 
   padding: var(--toolbar-padding);
   background: var(--bg-toolbar);
   backdrop-filter: blur(var(--blur-toolbar));
@@ -200,7 +202,30 @@
   display: flex;
   gap: var(--space-lg);
   flex-wrap: wrap;
+  align-items: flex-start;
   margin-top: var(--space-lg);
+}
+
+.dashboard-grid .accordion-card {
+  position: relative;         /* NEW — needed for z-index/transform stacking */
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+/* NEW — fan every other card down slightly, like tabs peeking out of
+   a folder. Text stays fully visible; this only offsets position and
+   deepens the shadow, it never overlaps a neighboring card's content. */
+.dashboard-grid .accordion-card:nth-child(3n+2) {
+  transform: translateY(10px);
+}
+.dashboard-grid .accordion-card:nth-child(3n+3) {
+  transform: translateY(20px);
+  box-shadow: var(--shadow-panel), 0 14px 28px rgba(0,0,0,0.25);
+}
+
+/* NEW — hovered card rises to the top of the stack */
+.dashboard-grid .accordion-card:hover {
+  transform: translateY(0) scale(1.02);
+  z-index: 5;
 }
 
 .accordion-card {
@@ -208,6 +233,10 @@
   padding: var(--panel-padding);
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.accordion-card,
+.state-card {
+  width: clamp(220px, 90vw, var(--card-width));
 }
 
 .accordion-card:hover {
@@ -407,11 +436,11 @@
 
 .state-grid { display: flex; gap: var(--space-lg); flex-wrap: wrap; margin-top: var(--space-lg); }
 
+
 .state-card {
   width: var(--card-width);
   padding: var(--panel-padding);
 }
-
 .state-card h3 {
   font-size: var(--font-size-h3);
   font-weight: 600;
