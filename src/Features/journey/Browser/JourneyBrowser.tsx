@@ -2,6 +2,7 @@ import type { Journey } from "../types";
 
 import type { NotebookFolder, Notebook, Page } from "../../notes/types";
 import { useState } from "react";
+import { Road, PanelLeft } from "lucide-react"; 
 import { useConfirmDelete } from "../../../Components/ConfirmDialog";
 import SortControl from "../../../Components/SortControl";
 import type { SortDirection } from "../../../Components/SortControl";
@@ -130,6 +131,9 @@ export default function JourneyBrowser(
 
     const [sortDirection, setSortDirection] =
         useState<SortDirection>("desc");
+
+     const [collapsed, setCollapsed] =
+        useState(false);
 
 
     const sortFieldOptions =
@@ -713,16 +717,23 @@ const looseJourneys =
         <>
         {confirmDialog}
 
-        <aside
-            style={{
-                width:"260px",
-                padding:"12px",
-                borderRight:
-                    "1px solid rgba(255,255,255,0.1)",
-                height:"100%",
-                overflowY:"auto",
-            }}
-        >
+  <aside className={`browser-panel${collapsed ? " browser-panel--collapsed" : ""}`}>
+            <div className="browser-panel-header">
+                <Tooltip text={collapsed ? "Expand Journeys" : "Collapse Journeys"}>
+                    <button
+                        className="browser-panel-toggle"
+                        onClick={() => setCollapsed((c) => !c)}
+                        aria-label="Toggle journeys panel"
+                    >
+                        {collapsed ? <Road size={18} /> : <PanelLeft size={18} />}
+                    </button>
+                </Tooltip>
+                {!collapsed && <span className="browser-panel-label">Journeys</span>}
+            </div>
+
+            {!collapsed && (
+            <div className="browser-panel-body">
+
 
             {/* ================= Create Journey / Folder ================= */}
 
@@ -1008,7 +1019,8 @@ const looseJourneys =
             )}
 
 
-
+            </div>
+            )}
         </aside>
 
         </>
