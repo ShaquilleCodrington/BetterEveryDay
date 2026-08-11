@@ -9,6 +9,7 @@
 
 import type { NotebookFolder, Notebook, Page } from "../types";
 import { useState } from "react";
+import { NotebookTabs, PanelLeft } from "lucide-react";
 import { useConfirmDelete } from "../../../Components/ConfirmDialog";
 import Tooltip from "../../../Components/Tooltip";
 
@@ -91,6 +92,7 @@ const [editingPageTitle, setEditingPageTitle] =
 const [editingTitle, setEditingTitle] =
     useState("");
 
+const [collapsed, setCollapsed] = useState(false);
 
 const [showAddExistingPopup, setShowAddExistingPopup] = useState(false);
 
@@ -141,7 +143,7 @@ function startEditingNotebook(notebook: Notebook)
         setEditingNotebookId(null);
     }
 
-    // CHANGED: new — same pattern as folder/notebook rename.
+   
     function startEditingPage(page: Page)
     {
         setEditingPageId(page.id);
@@ -193,8 +195,6 @@ function startEditingNotebook(notebook: Notebook)
     }
 
 
-    // CHANGED: assigns a loose notebook to the currently open folder,
-    // then closes the picker.
     function handleAddExistingNotebook(notebookId: string)
     {
         if (!selectedFolderId) return;
@@ -442,16 +442,22 @@ function startEditingNotebook(notebook: Notebook)
     return (
         <>
         {confirmDialog}
-        <aside
-            style={{
-                width: "260px",
-                padding: "12px",
-                borderRight: "1px solid rgba(255,255,255,0.1)",
-                height: "100%",
-                minHeight: 0,
-                overflowY: "auto",
-            }}
-        >
+        <aside className={`browser-panel${collapsed ? " browser-panel--collapsed" : ""}`}>
+            <div className="browser-panel-header">
+                <Tooltip text={collapsed ? "Expand Notebooks" : "Collapse Notebooks"}>
+                    <button
+                        className="browser-panel-toggle"
+                        onClick={() => setCollapsed((c) => !c)}
+                        aria-label="Toggle notebooks panel"
+                    >
+                        {collapsed ? <NotebookTabs size={18} /> : <PanelLeft size={18} />}
+                    </button>
+                </Tooltip>
+                {!collapsed && <span className="browser-panel-label">Notebooks</span>}
+            </div>
+
+            {!collapsed && (
+            <div className="browser-panel-body">
             
             <div
                 style={{
@@ -721,6 +727,9 @@ function startEditingNotebook(notebook: Notebook)
             {/* Always shown at root, same as before. */}
 
             {looseNotebooks.map((notebook) => renderNotebookRow(notebook))}
+        
+        </div>
+            )}
         </aside>
         </>
     );
