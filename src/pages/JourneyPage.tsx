@@ -696,10 +696,12 @@ const journeySessions =
             <main
                 style={{
                     flex:1,
+                    minWidth: 0,
                     display:"flex",
                     justifyContent:"center",
-                    padding:"40px",
+                    padding:"clamp(12px, 4vw, 40px)",
                     overflowY:"auto",
+                    overflowX:"hidden",
                 }}
             >
             {  selectedPage  ?
@@ -707,9 +709,11 @@ const journeySessions =
         <div
             style={{
                 width:"95%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
                 backgroundColor:"rgba(20,12,55,0.38)",
                 borderRadius:"10px",
-                padding:"48px",
+                padding: "clamp(16px, 4vw, 48px)",
                 minHeight:"900px",
             }}
         >
@@ -727,6 +731,7 @@ const journeySessions =
                   placeholder="Untitled Session"
                 style={{
                     width:"100%",
+                    boxSizing: "border-box",
                     fontSize:"2.5rem",
                     fontWeight:"bold",
                     background:"transparent",
@@ -740,6 +745,7 @@ const journeySessions =
                         <div
                             style={{
                                 display:"flex",
+                                flexWrap: "wrap",
                                 gap:"10px",
                                 marginTop:"20px",
                             }}
@@ -980,6 +986,7 @@ const journeySessions =
                        <div
                             style={{
                                 display:"flex",
+                                flexWrap: "wrap",
                                 gap:"10px",
                                 marginTop:"20px",
                             }}
@@ -1029,8 +1036,10 @@ const journeySessions =
                                 style={{
                                     position: "absolute",
                                     top: 160,
-                                    right: 48,
-                                    width: 300,
+                                    right: "clamp(16px, 4vw, 48px)",
+                                    width: "min(300px, calc(100vw - 32px))",
+                                    maxWidth: "calc(100vw - 32px)",
+                                    boxSizing: "border-box",
                                     background: "#1a1a2e",
                                     borderRadius: 8,
                                     padding: 12,
@@ -1048,6 +1057,7 @@ const journeySessions =
                                         style={{
                                             padding: "10px",
                                             cursor: "pointer",
+                                            overflowWrap: "anywhere",
                                             borderBottom:
                                                 "1px solid rgba(255,255,255,.15)",
                                         }}
