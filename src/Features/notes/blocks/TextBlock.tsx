@@ -168,18 +168,13 @@ export default function TextBlock(
         }, [value]);
 
     return (
-         <div style={{ position: "relative",
-                    padding: "6px 0" }}>
+         <div className="block">
 
-        <div style={{
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 8,
-                    }}
-            >
+        <div className="block-row">
+
                 <Tooltip text="Insert or convert this into a different block type" side="right">
                     <button
+                     className="block-action"
                         onClick={() => setShowSlashMenu(true)}
                     >
                         +
@@ -192,22 +187,10 @@ export default function TextBlock(
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Click here to start writing..."
-                style={{
-                    width: "100%",
-                    minHeight: "30px",
-                    overflow: "hidden",
-                    border: "none",
-                    outline: "none",
-                    resize: "none",
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    background: "transparent",
-                    color: "inherit",
-                    fontFamily: "inherit",
-                }}
-            />
+                className = "block-input"
 
-                </div>
+                />
+               
             {showSlashMenu && (
                 <SlashMenu
                     query={slashQuery}
@@ -216,5 +199,6 @@ export default function TextBlock(
             )}
 
     </div>
+    </div>
 );
-            }
+}          

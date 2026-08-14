@@ -590,6 +590,79 @@
   overflow-y: auto;
 }
 
+/* ── Notebook Blocks ───────────────────────────────────────────────────── */
+
+.block {
+  width: 100%;
+  padding: clamp(var(--space-xs), 1.2vw, var(--space-sm)) 0;
+}
+
+.block-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(var(--space-xs), 1.2vw, var(--space-sm));
+}
+
+
+/* Responsive block action button */
+.block-action {
+  flex: 0 0 auto;
+  width: clamp(28px, 4vw, 36px);
+  min-height: clamp(28px, 4vw, 36px);
+  padding: 0;
+
+  font-size: clamp(
+    var(--font-size-xs),
+    1.4vw,
+    var(--font-size-base)
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-input {
+  width: 100%;
+  min-height: clamp(28px, 3vw, 30px);
+  overflow: hidden;
+  border: none;
+  outline: none;
+  resize: none;
+  
+  font-size: clamp(
+    var(--font-size-xs),
+    1.5vw,
+    var(--font-size-base)
+  );
+
+  line-height: 1.5;
+
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+
+  padding: 0;
+}
+
+.block-input:focus {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 

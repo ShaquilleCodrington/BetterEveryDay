@@ -111,17 +111,13 @@ export default function EmptyBlock({
 
 
     return (
-        <div style={{ width: "100%", padding: "8px 0" }}>
+        <div className="block">
 
-            <div style={{
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 8,
-                    }}
-            >
+        <div className="block-row">
+
                 <Tooltip text="Insert or convert this into a different block type" side="right">
                     <button
+                     className="block-action"
                         onClick={() => setShowSlashMenu(true)}
                     >
                         +
@@ -132,16 +128,7 @@ export default function EmptyBlock({
                         value={value}
                         onChange={change}
                         onKeyDown={keyDown}
-                        style={{
-                            width: "100%",
-                            minHeight: 30, 
-                            overflow: "hidden",
-                            border: "none",
-                            outline: "none",
-                            resize: "none",
-                            fontSize: "1rem",
-                            background: "transparent",
-                        }}
+                        className = "block-input"
                         placeholder="Click here to start writing..."
                     />
 
