@@ -263,8 +263,8 @@ const selectedPage =
                             style={{
                                 flex: 1,
                                 width: "100%",
-                                minHeight: "600px",
-                                paddingBottom: "260px",
+                                minHeight: "clamp(320px, 60vh, 600px)",
+                                paddingBottom: "clamp(48px, 8vh, 120px)",
                                 cursor: "text",
                             }}
                         >
@@ -290,7 +290,7 @@ const selectedPage =
                             alignItems: "center",
                             width: "100%",
                             color: "#777",
-                            fontSize: "1.2rem",
+                            fontSize: "clamp(1rem, 2.5vw, 1.2rem)",
                         }}
                     >
                         Select or create a page to begin writing.

@@ -1,5 +1,4 @@
 import type { Journey } from "../types";
-
 import type { NotebookFolder, Notebook, Page } from "../../notes/types";
 import { useState } from "react";
 import { Road, PanelLeft } from "lucide-react"; 
@@ -415,9 +414,7 @@ const looseJourneys =
 
             <div
                 key={journey.journeyId}
-                style={{
-                    marginBottom:"18px",
-                }}
+                className ="journey-browser-journey"
             >
 
                 <div

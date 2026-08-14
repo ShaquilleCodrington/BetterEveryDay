@@ -533,7 +533,7 @@
 }
 
 .browser-panel {
-  width: 260px;
+  width: clamp(180px, 20vw, 260px);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;

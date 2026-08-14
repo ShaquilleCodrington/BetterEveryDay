@@ -732,7 +732,7 @@ const journeySessions =
                 style={{
                     width:"100%",
                     boxSizing: "border-box",
-                    fontSize:"2.5rem",
+                    fontSize:"clamp(1.5rem, 5vw, 2.5rem)",
                     fontWeight:"bold",
                     background:"transparent",
                     border:"none",
@@ -1085,9 +1085,11 @@ const journeySessions =
             <div
                 onClick={handleCanvasClick}
                 style={{
-                    flex: 1,
-                    width: "100%",
-                    minHeight: "600px",
+                flex: 1,
+                width: "100%",
+                minHeight: "clamp(320px, 60vh, 600px)",
+                paddingBottom: "clamp(48px, 8vh, 120px)",
+                cursor: "text",
                 }}
             >
             <BlockList
@@ -1151,7 +1153,7 @@ selectedJourneyId
             alignItems:"center",
             width:"100%",
             color:"#777",
-            fontSize:"1.2rem",
+            fontSize:"clamp(1rem, 2.5vw, 1.2rem)",
         }}
     >
         Select or create a journey.
