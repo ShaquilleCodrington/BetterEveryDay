@@ -160,17 +160,13 @@ export default function HeadingBlock({
     }
 
     return (
-        <div style={{ position: "relative", padding: "6px 0" }}>
-            
-            <div style={{
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 8,
-                    }}
-            >
+            <div className="block">
+
+            <div className="block-row">
+
                 <Tooltip text="Insert or convert this into a different block type" side="right">
                     <button
+                        className="block-action"
                         onClick={() => setShowSlashMenu(true)}
                     >
                         +
@@ -182,22 +178,9 @@ export default function HeadingBlock({
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Heading..."
-                style={{
-                    width: "100%",
-                    minHeight: "40px",
-                    overflow: "hidden",
-                    border: "none",
-                    outline: "none",
-                    resize: "none",
-                    background: "transparent",
-                    color: "inherit",
-                    fontFamily: "inherit",
+                className = "block-input block-heading-input"
 
-                    //  key difference: heading styling
-                    fontSize: "1.6rem",
-                    fontWeight: 600,
-                    lineHeight: "1.3"
-                }}
+              
             />
             </div>
 

@@ -646,6 +646,18 @@
   padding: 0;
 }
 
+/* Responsive heading typography */
+.block-heading-input {
+  font-size: clamp(
+    var(--font-size-base),
+    2.5vw,
+    1.6rem
+  );
+
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 .block-input:focus {
   background: transparent;
   border: none;
