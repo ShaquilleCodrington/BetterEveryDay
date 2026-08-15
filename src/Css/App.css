@@ -22,6 +22,8 @@
   -webkit-backdrop-filter: blur(var(--blur-sidebar));
   border-right: 1px solid var(--border-sidebar);
   box-shadow: inset -1px 0 0 rgba(255,255,255,0.04), var(--shadow-sidebar);
+  box-sizing: border-box;
+  min-width: 0;
   height: 100vh;
   overflow: hidden;
   transition: width 0.2s ease, padding 0.2s ease;
@@ -39,7 +41,7 @@
 /* CHANGED: new block — center icons, tighten padding when collapsed */
 .sidebar.sidebar--collapsed .sidebar-btn {
   justify-content: center;
-  padding: 9px 0;
+  padding-inline: 0;
 }
 
 
@@ -62,6 +64,7 @@
   text-shadow: 0 0 20px rgba(160, 190, 255, 0.4);
   white-space: nowrap;
   overflow: hidden;
+  min-width: 0;
 }
 
 
@@ -69,7 +72,8 @@
 .sidebar-logo-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: clamp(6px, 1vw, 10px);
+  min-width: 0;
   margin-bottom: var(--space-xl);
   padding-bottom: var(--space-lg);
   border-bottom: 1px solid var(--border-sidebar);
@@ -80,16 +84,19 @@
   flex-direction: column;
   gap: var(--space-xs);
   flex: 1;
+  min-width: 0;
 }
 .sidebar-btn {
   display: flex;
   align-items: center;
-  gap: 10px; /* CHANGED: spacing between icon and label */
+  gap: clamp(6px, 1vw, 10px); 
   width: 100%;
-  min-width: unset;
+  min-width: 0;
   text-align: left;
   justify-content: flex-start;
-  padding: 9px 12px;
+
+  padding-block: 9px;
+  padding-inline: clamp(6px, 1vw, 12px);
   font-size: var(--font-size-xs);
   letter-spacing: 0.09em;
   color: rgba(200, 218, 255, 0.65);
@@ -97,22 +104,38 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sidebar-btn);
   box-shadow: none;
+  overflow: hidden;
+  text-align: left;
+  box-sizing: border-box;
   transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 /* CHANGED: new block — icon sizing/centering inside sidebar buttons */
 .sidebar-btn-icon {
-  flex-shrink: 0;
+  flex: 0 0 clamp(14px, 1.5vw, 20px);
+  
   display: flex;
   align-items: center;
   justify-content: center;
+  
 }
 
 /* CHANGED: new block — label text handling */
-.sidebar-btn-label {
-  white-space: nowrap;
+.sidebar-btn-label { 
+  flex: 1 1 auto;
+  min-width: 0;
+
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: clamp(
+    9px,
+    0.9vw,
+    var(--font-size-xs)
+  );
 }
+
 .sidebar-btn:hover {
   color: rgba(230, 242, 255, 0.97);
   background: var(--accent-sidebar-btn-hover-bg);

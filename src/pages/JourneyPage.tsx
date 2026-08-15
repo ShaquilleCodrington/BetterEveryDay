@@ -609,8 +609,8 @@ const journeySessions =
         
 const journeyBrowserBasis =
     journeyBrowserCollapsed
-        ? "4%"
-        : "15%";
+        ? "10%"
+        : "20%";
 
 
     // ======================================================
