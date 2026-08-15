@@ -27,13 +27,31 @@ function MainLayout()
    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return(
-    <div className="app-shell">
+    <div className="app-shell"
+     style={{
+        display: "flex",
+        width: "100%",
+        minWidth: 0,
+    }}
+    >
+       <div
+        style={{
+            flex: `0 0 ${sidebarCollapsed ? "4%" : "13%"}`,
+            minWidth: 0,
+        }}>
+
+        
     <Sidebar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
       />
+      </div>
 
-      <div className="main-content">
+      <div className="main-content"
+             style={{
+            flex: "1 1 auto",
+            minWidth: 0,
+        }}>
         <Toolbar />
 
         <div className="page-container">

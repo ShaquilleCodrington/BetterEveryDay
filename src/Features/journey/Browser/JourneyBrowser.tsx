@@ -63,6 +63,8 @@ onRemoveNotebookFromFolder:
 (
     notebookId:string
 ) => void;
+
+onCollapseChange?: (collapsed: boolean) => void;
 }
 
 
@@ -94,6 +96,8 @@ export default function JourneyBrowser(
     onRenameNotebook,
     onAssignNotebookToFolder,
     onRemoveNotebookFromFolder,
+
+    onCollapseChange,
 
 }: JourneyBrowserProps)
 
@@ -719,7 +723,13 @@ const looseJourneys =
                 <Tooltip text={collapsed ? "Expand Journeys" : "Collapse Journeys"}>
                     <button
                         className="browser-panel-toggle"
-                        onClick={() => setCollapsed((c) => !c)}
+                        onClick={() => {
+                                    setCollapsed((c) => {
+                                        const next = !c;
+                                        onCollapseChange?.(next);
+                                        return next;
+                                    });
+                                }}
                         aria-label="Toggle journeys panel"
                     >
                         {collapsed ? <Road size={18} /> : <PanelLeft size={18} />}

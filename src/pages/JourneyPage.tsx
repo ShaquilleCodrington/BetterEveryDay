@@ -56,6 +56,9 @@ export default function JourneyPage()
     const [selectedJourneyId, setSelectedJourneyId] =
         useState<string | null>(null);
 
+    const [journeyBrowserCollapsed, setJourneyBrowserCollapsed] =
+    useState(false);
+
 
     const [selectedPageId, setSelectedPageId] =
         useState<string | null>(null);
@@ -604,7 +607,10 @@ const journeySessions =
         :
         [];
         
-
+const journeyBrowserBasis =
+    journeyBrowserCollapsed
+        ? "4%"
+        : "15%";
 
 
     // ======================================================
@@ -622,6 +628,13 @@ const journeySessions =
             }}
         >
 
+        <div
+            style={{
+                flex: `0 0 ${journeyBrowserBasis}`,
+                minWidth: 0,
+                overflow: "hidden",
+            }}
+        >
 
          <JourneyBrowser
 
@@ -686,11 +699,12 @@ const journeySessions =
     onRenameNotebook={
         handleRenameNotebook
     }
-    onAssignNotebookToFolder={
-    handleAssignNotebookToFolder
-}
+    onAssignNotebookToFolder={ handleAssignNotebookToFolder}
+
+    onCollapseChange={setJourneyBrowserCollapsed}
 
 />
+</div>
 
 
             <main

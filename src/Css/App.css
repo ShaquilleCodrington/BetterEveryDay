@@ -12,7 +12,7 @@
 
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 .sidebar {
-  width: var(--sidebar-width);
+  width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@
 
 /* CHANGED: new block — collapsed sidebar state */
 .sidebar.sidebar--collapsed {
-  width: 60px;
+  width: 100%;
   padding-left: var(--space-xs);
   padding-right: var(--space-xs);
 }
@@ -533,7 +533,7 @@
 }
 
 .browser-panel {
-  width: clamp(180px, 20vw, 260px);
+  width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -546,7 +546,7 @@
 }
 
 .browser-panel--collapsed {
-  width: 52px;
+  width: 100%;
   padding: 12px 8px;
 }
 
