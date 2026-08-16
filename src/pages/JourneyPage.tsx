@@ -56,10 +56,6 @@ export default function JourneyPage()
     const [selectedJourneyId, setSelectedJourneyId] =
         useState<string | null>(null);
 
-    const [journeyBrowserCollapsed, setJourneyBrowserCollapsed] =
-    useState(false);
-
-
     const [selectedPageId, setSelectedPageId] =
         useState<string | null>(null);
 
@@ -607,10 +603,15 @@ const journeySessions =
         :
         [];
         
+        
+const [journeyBrowserCollapsed, setJourneyBrowserCollapsed] =
+    useState(false);
+
+
 const journeyBrowserBasis =
     journeyBrowserCollapsed
         ? "10%"
-        : "20%";
+        : "22%";
 
 
     // ======================================================
@@ -1111,27 +1112,13 @@ const journeyBrowserBasis =
                 page={selectedPage}
                 blocks={blocks}
                 tasks={tasks}
-                onUpdateBlock={
-                    handleUpdateBlock
-                }
-                onConvertBlock={
-                    handleConvertBlock
-                }
-                onCreateBlockAfter={
-                    handleCreateBlockAfter
-                }
-                onDeleteBlock={
-                    handleDeleteBlock
-                }
-                onEditTask={
-                    handleEditTask
-                }
-                onDeleteTask={
-                    handleDeleteTask
-                }
-                focusedBlockId={
-                    focusedBlockId
-                }
+                onUpdateBlock={handleUpdateBlock}
+                onConvertBlock={handleConvertBlock}
+                onCreateBlockAfter={handleCreateBlockAfter}
+                onDeleteBlock={handleDeleteBlock}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                focusedBlockId={focusedBlockId}
 
             />
             </div>

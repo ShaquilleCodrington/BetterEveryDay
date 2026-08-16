@@ -39,6 +39,8 @@ interface NotebookBrowserProps
     onRenameFolder: (folderId: string, title: string) => void;
     onAssignNotebookToFolder: (notebookId: string, folderId: string) => void;
     onRemoveNotebookFromFolder: (notebookId: string) => void;
+    
+    onCollapseChange?: (collapsed: boolean) => void;
 }
 
 
@@ -69,7 +71,9 @@ export default function NotebookBrowser(
     onSelectedFolder,
     onRenameFolder,
     onAssignNotebookToFolder,
-    onRemoveNotebookFromFolder
+    onRemoveNotebookFromFolder,
+
+    onCollapseChange,
     
 }: NotebookBrowserProps)
 
@@ -219,7 +223,7 @@ function startEditingNotebook(notebook: Notebook)
         return (
             <div
                 key={notebook.id}
-                style={{ marginBottom: "18px" }}
+                 className ="journey-browser-journey"
             >
                 {/* ================= Notebook Row ================= */}
                 <div
@@ -277,6 +281,7 @@ function startEditingNotebook(notebook: Notebook)
 
                           {/* Remove From Folder */}
                     {notebook.folderId && (
+
                         <button
                             onClick={() =>
                                 onRemoveNotebookFromFolder(notebook.id)
@@ -447,7 +452,13 @@ function startEditingNotebook(notebook: Notebook)
                 <Tooltip text={collapsed ? "Expand Notebooks" : "Collapse Notebooks"}>
                     <button
                         className="browser-panel-toggle"
-                        onClick={() => setCollapsed((c) => !c)}
+                        onClick={() =>  {
+                                setCollapsed((c) => {
+                                const next = !c;
+                                onCollapseChange?.(next);
+                                return next;
+                                        });
+                                         }}
                         aria-label="Toggle notebooks panel"
                     >
                         {collapsed ? <NotebookTabs size={18} /> : <PanelLeft size={18} />}

@@ -36,7 +36,7 @@ function MainLayout()
     >
        <div
         style={{
-            flex: `0 0 ${sidebarCollapsed ? "10%" : "20%"}`,
+            flex: `0 0 ${sidebarCollapsed ? "8%" : "13%"}`,
             minWidth: 0,
         }}>
 

@@ -76,7 +76,15 @@ export default function NotesPage({
 const selectedPage =
     pages.find((page) => page.id === selectedPageId);
 
-    
+const [notebookBrowserCollapsed, setNotebookBrowserCollapsed] =
+    useState(false);
+
+       
+const notebookBrowserBasis =  notebookBrowserCollapsed
+        ? "8%"
+        : "22%";
+
+
 
     return (
         <div
@@ -87,6 +95,15 @@ const selectedPage =
                 backgroundColor: "rgba(20, 12, 55, 0.38)",
             }}
         >
+            
+        <div
+            style={{
+                flex: `0 0 ${notebookBrowserBasis}`,
+                minWidth: 0,
+                overflow: "hidden",
+            }}
+        >
+            
             {/* ================= SIDEBAR ================= */}
             <NotebookBrowser
 
@@ -114,7 +131,12 @@ const selectedPage =
                 onAssignNotebookToFolder={handleAssignNotebookToFolder}
                 onRemoveNotebookFromFolder={handleRemoveNotebookFromFolder}
                 onDeleteFolder={handleDeleteFolder}
+
+                
+                onCollapseChange={setNotebookBrowserCollapsed}
                 />
+                
+            </div>
 
             {/* ================= MAIN EDITOR ================= */}
             <main

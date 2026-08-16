@@ -466,12 +466,9 @@ const looseJourneys =
                                 }
                                  value={editingTitle}
 
-                                onChange={(e) =>
-                                    setEditingTitle(
-                                        e.target.value
-                                    )
-                                }  onBlur={
-                                    commitJourneyRename
+                                onChange={(e) => setEditingTitle(
+                                        e.target.value )
+                                }  onBlur={ commitJourneyRename
                                 }
 
                                 onKeyDown={(e) =>
