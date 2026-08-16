@@ -78,11 +78,11 @@
   --space-xl:   28px;
 
   /* Panel padding */
-  --panel-padding:    18px 20px;
+ --panel-padding: clamp(14px, 1.5vw, 18px) clamp(14px, 1.5vw, 20px);
   --popup-padding:    26px;
-  --page-padding:     28px;
-  --sidebar-padding:  20px 14px;
-  --toolbar-padding:  12px 20px;
+  --page-padding: clamp(16px, 2vw, 28px);
+  --sidebar-padding: clamp(12px, 1.5vw, 20px) clamp(8px, 1vw, 14px);
+  --toolbar-padding: clamp(8px, 1vw, 12px) clamp(12px, 1.5vw, 20px);
 
   /* ── Sidebar width ──────────────────────────────────────────────────────*/
   --sidebar-width:    180px;
@@ -169,7 +169,7 @@ input, select, textarea {
   background: var(--bg-input);
   border: 1px solid var(--border-input);
   border-radius: var(--radius-input);
-  padding: 7px 11px;
+  padding: clamp(5px, 0.5vw, 7px) clamp(8px, 0.75vw, 11px);
   outline: none;
   transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   width: 100%;

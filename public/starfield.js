@@ -68,15 +68,15 @@
   const MOOD_THEMES = {
 
     default: {
-      bg:         [7, 4, 26],
+      bg:         [4, 4, 26],
       stars:      [
         '#ffffff','#ffffff','#ffffff','#ffffff','#ffffff',
         '#ffffff','#ffffff','#ffffff','#ffffff','#ffffff',
-        '#fffef5','#fffef5','#fff8e8','#ffefc0',
+        '#e8f0ff','#e8f0ff','#e8f0ff','#e8f0ff',
         '#cce0ff','#cce0ff','#b8d4ff',
-        '#ffd090','#ffb870','#ff9060',
+        '#681EFF','#4e13c7','#533395',
       ],
-      mist:       [[60,30,140],[20,60,160],[100,20,100],[30,80,130],[80,20,120]],
+      mist: [[50, 20, 150], [70, 25, 180], [30, 50, 170], [90, 20, 140], [40, 30, 190]],
       twinkleMin: 0.3,
       twinkleMax: 1.2,
       alphaBoost: 1.0,
@@ -98,14 +98,14 @@
     },
 
     Planning: {
-      bg:         [16, 10, 4],
+      bg:         [9, 6, 24],
       stars:      [
         '#ffffff','#ffffff','#ffffff','#ffffff',
         '#fffef0','#fffef0','#fffef0',
         '#fff8d0','#fff8d0','#fff8d0',
-        '#ffefc0','#ffefc0','#ffefc0',
+        '#fff5c0','#f2ffc0','#f6ffc0',
         '#ffd090','#ffd090','#ffb870',
-        '#ffcc60','#ffaa40','#ff9830',
+        '#70518f','#9449a0','#723b49',
       ],
       mist:       [[120,60,10],[140,50,5],[100,70,15],[130,45,8],[110,65,12]],
       twinkleMin: 0.2,
@@ -114,14 +114,14 @@
     },
 
     Recharge: {
-      bg:         [2, 14, 10],
+      bg:         [2, 10, 20],
       stars:      [
         '#ffffff','#ffffff','#ffffff','#ffffff',
         '#e0fff5','#e0fff5','#e0fff5',
         '#c0ffe8','#c0ffe8','#c0ffe8',
-        '#a0ffd8','#a0ffd8',
+        '#72b79a','#95c6b2',
         '#80ffcc','#80ffcc',
-        '#60ffbc','#40ffac',
+        '#7af5c2','#64fab9',
         '#b8ffec','#d0fff8',
       ],
       mist:       [[0,100,80],[10,120,90],[0,80,100],[5,110,85],[15,95,75]],
