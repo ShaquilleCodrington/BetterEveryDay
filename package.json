@@ -44,6 +44,8 @@
     }
   },
   "dependencies": {
+    "@firebase-oss/ui-react": "^7.0.3",
+    "@firebase-oss/ui-styles": "^7.1.0",
     "electron-updater": "^6.3.9",
     "firebase": "^12.17.1",
     "lucide-react": "^1.31.0",

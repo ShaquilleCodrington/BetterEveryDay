@@ -21,6 +21,8 @@
 // ======================================================
 
 export interface ProfileData {
+
+    uid: string  | null;
     name: string;
     primaryTitle: string;
     titles: string[];
@@ -29,6 +31,7 @@ export interface ProfileData {
 }
 
 export const DEFAULT_PROFILE: ProfileData = {
+    uid:          null,
     name:         "",
     primaryTitle: "",
     titles:       [],
