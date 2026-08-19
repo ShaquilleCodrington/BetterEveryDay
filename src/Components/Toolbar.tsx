@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
+import { logout } from "../Services/firebase/auth";
 
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
@@ -99,6 +100,20 @@ export default function Toolbar() {
           Timer
         </button>
       </Tooltip>
+
+       {/* Logout remains persistent beside the Help control. */}
+      <div
+        style={{
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <button onClick={logout}>
+          Logout
+        </button>
+      </div>
 
       {/* Help stays pinned to the right edge on its own */}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>

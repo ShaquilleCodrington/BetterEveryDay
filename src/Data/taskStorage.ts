@@ -13,6 +13,15 @@ import type { Task } from "./tasks";
 {/* Storage Key */}
 const STORAGE_KEY = "tasks";
 
+//Repairs older Tasks so every Task has an explicit
+//userId field.
+export function repairTask(task: Task): Task {
+    return {
+        ...task,
+        userId: task.userId ?? null,
+    };
+}
+
 {/* Loads Tasks from localStorage */}
 export function loadTasks(): Task[] {
 
@@ -23,32 +32,68 @@ export function loadTasks(): Task[] {
     }
 
     const tasks: Task[] = JSON.parse(savedTasks);
+// ==================================================
+    // 2026-08-18 — State Convergence
+    // --------------------------------------------------
+    // Repair existing Tasks so older localStorage data
+    // receives the new userId field.
+    //
+    // This keeps the Task model backward compatible:
+    // older Tasks become userId: null instead of being
+    // treated as invalid or requiring migration.
+    // ==================================================
 
-    // ── Duplicate-id repair ─────────────────────────────────────────────
-    // Edit/delete both match tasks by id, so two tasks sharing the same
-    // id get edited or deleted together (and React key collisions make
-    // edits look like they don't save). Older saved data could contain
-    // duplicates from a since-fixed seeding bug — reassign any repeats
-    // a fresh id here, once, so every task is safe to edit/delete on
-    // its own from this point on.
     const seenIds = new Set<string>();
-    let hadDuplicates = false;
+    let needsRepair = false;
 
     const repairedTasks = tasks.map((task) => {
+
+        let repairedTask = task;
+
+        // ----------------------------------------------
+        // Repair missing or duplicate Task IDs
+        // ----------------------------------------------
+
         if (!task.id || seenIds.has(task.id)) {
-            hadDuplicates = true;
-            return { ...task, id: crypto.randomUUID() };
+            needsRepair = true;
+
+            repairedTask = {
+                ...repairedTask,
+                id: crypto.randomUUID(),
+            };
         }
-        seenIds.add(task.id);
-        return task;
+
+        seenIds.add(repairedTask.id);
+
+        // ----------------------------------------------
+        // Repair missing userId
+        // ----------------------------------------------
+
+        if (repairedTask.userId === undefined) {
+            needsRepair = true;
+
+            repairedTask = repairTask(repairedTask);
+        }
+
+        return repairedTask;
     });
 
-    if (hadDuplicates) {
+
+    // ==================================================
+    // Persist repairs immediately.
+    //
+    // This means once an older Task is loaded, the
+    // local copy is upgraded and future reads already
+    // contain userId.
+    // ==================================================
+
+    if (needsRepair) {
         saveTasks(repairedTasks);
     }
 
     return repairedTasks;
 }
+
 
 
 {/* Saves task */}

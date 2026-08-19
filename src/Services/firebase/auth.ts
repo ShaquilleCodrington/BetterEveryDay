@@ -1,5 +1,6 @@
 import {
     onAuthStateChanged,
+    signOut,
     type User,
     type Unsubscribe,
 } from "firebase/auth";
@@ -25,4 +26,9 @@ export function subscribeToAuthState(
     callback: (user: User | null) => void
 ): Unsubscribe {
     return onAuthStateChanged(auth, callback);
+}
+
+// Provides the existing auth layer with an explicit logout action.
+export function logout(): Promise<void> {
+    return signOut(auth);
 }

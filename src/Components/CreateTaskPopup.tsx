@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { Task } from "../Data/tasks";
+import { useAuthConnector } from "../Services/firebase/connector";
 
 type CreateTaskPopupProps = {
   onClose: () => void;
   onCreate: (task: Task) => void;
-};
 
-export default function CreateTaskPopup({ onClose, onCreate }: CreateTaskPopupProps) {
+};export default function CreateTaskPopup({ onClose, onCreate }: CreateTaskPopupProps) 
+{ const  currentUser  = useAuthConnector();
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [mood, setMood] = useState("Focused");
@@ -14,9 +15,14 @@ export default function CreateTaskPopup({ onClose, onCreate }: CreateTaskPopupPr
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
 
-  function handleSubmit() {
-    const newTask = {
-      id: crypto.randomUUID(),
+function handleSubmit() {
+   // ====================================================== // 2026-08-18 — State Convergence // ------------------------------------------------------ //
+   //  Establish Task ownership at the creation boundary. 
+   // // Guest-created Tasks use null. 
+   // // Authenticated Tasks use the Firebase user's UID. 
+   // // ======================================================
+
+   const userId = currentUser?.uid ?? null; const newTask = { id: crypto.randomUUID(), userId,
       title,
       notes,
       completed: false,

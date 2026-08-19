@@ -21,7 +21,8 @@
 // keeps profile.uid in sync with auth state.
 // ======================================================
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { User } from "firebase/auth";
 import { subscribeToAuthState } from "./auth";
 import { getProfile, saveProfile } from "../../Data/profileStorage";
 
@@ -30,16 +31,21 @@ import { getProfile, saveProfile } from "../../Data/profileStorage";
  * Subscribes to Firebase auth state for the lifetime of the
  * component and keeps profile.uid in sync automatically.
  */
-export function useAuthConnector(): void {
-    useEffect(() => {
-        const unsubscribe = subscribeToAuthState(async (user) => {
-            const nextUid = user ? user.uid : null;
-            await syncProfileUid(nextUid);
-        });
 
-        return unsubscribe;
-    }, []);
+export function useAuthConnector(): User | null {
+     const [currentUser, setCurrentUser] = useState<User | null>(null); 
+     
+     useEffect(() => { const unsubscribe = subscribeToAuthState(async (user) =>
+        { setCurrentUser(user);
+        const nextUid = user ? user.uid : null;
+        await syncProfileUid(nextUid); }); 
+
+return unsubscribe; 
+}, []); 
+
+return currentUser; 
 }
+
 
 /**
  * Explicit guest path. Wire this up to the "Continue as
