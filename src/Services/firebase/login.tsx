@@ -1,5 +1,4 @@
 import { SignInAuthScreen } from "@firebase-oss/ui-react";
-import { logout } from "./auth";
 
 interface LoginScreenProps {
     onGuest: () => void;

@@ -106,17 +106,17 @@ function AuthGate() {
 
    // Either Firebase authenticated the user or the user
   // explicitly chose to continue as a guest.
-  return <MainApplication />;
+  return <MainApplication onLogin={() => setAuthStatus("login")}/>;
 }
 
 // This contains the existing BetterEveryDay routes.
 //
 // The routes were moved out of App() so that AuthGate can
 // control whether these routes are rendered.
-function MainApplication() {
+function MainApplication({ onLogin }: { onLogin: () => void }) {
   return (
     <Routes>
-      <Route element={<MainLayout />}>
+      <Route element={<MainLayout onLogin={onLogin} />}>
         <Route path="/" element={<DashboardPage />}>
           <Route
             index
@@ -161,7 +161,7 @@ function MainApplication() {
 
 // This only renders after AuthGate allows the user into
 // MainApplication.
-function MainLayout()
+function MainLayout({ onLogin }: { onLogin: () => void }) {
 {
 
    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -192,10 +192,10 @@ function MainLayout()
             flex: "1 1 auto",
             minWidth: 0,
         }}>
-        <Toolbar />
+        <Toolbar onLogin={onLogin} />
 
         <div className="page-container">
-          <Outlet/>
+          <Outlet  context={{ onLogin }}/>
        
         </div>
       </div>
@@ -203,7 +203,7 @@ function MainLayout()
   );
 }
 
-
+}
 function App() {
   return <AuthGate />;
 }

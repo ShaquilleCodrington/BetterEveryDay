@@ -4,6 +4,7 @@ import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
 import { logout } from "../Services/firebase/auth";
+import { useAuthConnector } from "../Services/firebase/connector";
 
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
@@ -72,13 +73,27 @@ function ProfileButton() {
   );
 }
 // CHANGED: reverted — Toolbar no longer needs collapsed/onToggleSidebar props
-export default function Toolbar() {
+export default function Toolbar({
+     onLogin,  
+    }: {
+   onLogin: () => void;
+      })
+    {
+
   const navigate = useNavigate();
+
+  const currentUser = useAuthConnector();
+
+  
+
+   async function handleLogout() {
+    await logout();
+  }
+
   return (
     <div className="toolbar">
 
-      {/* CHANGED: removed the PanelLeft toggle button block that was here — moved to Sidebar.tsx */}
-
+      
       {/* Profile button */}
       <ProfileButton />
 
@@ -110,9 +125,15 @@ export default function Toolbar() {
           gap: "8px",
         }}
       >
-        <button onClick={logout}>
-          Logout
-        </button>
+        {currentUser ? (
+          <button type="button" onClick={handleLogout}>
+            Logout
+          </button>
+        ) : (
+          <button type="button" onClick={onLogin}>
+            Login
+          </button>
+        )}
       </div>
 
       {/* Help stays pinned to the right edge on its own */}

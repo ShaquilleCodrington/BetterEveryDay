@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PROFILE, getProfile, saveProfile } from "../Data/profileStorage";
 import type { ProfileData } from "../Data/profileStorage";
 import { loadTasks } from "../Data/taskStorage";
-
+import { useNavigate } from "react-router-dom";
+import { useAuthConnector } from "../Services/firebase/connector";
+import { useOutletContext } from "react-router-dom";
+import { logout } from "../Services/firebase/auth";
 // ── Default avatar icon shown when no photo has been set ──────────────────
 function DefaultAvatarIcon() {
   return (
@@ -44,7 +47,8 @@ function Avatar({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+    <div style={{ display: "flex", flexDirection: "column",
+       alignItems: "center", gap: "14px" }}>
       <div
         style={{
           width: "150px",
@@ -61,14 +65,17 @@ function Avatar({
         }}
       >
         {photo ? (
-          <img src={photo} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={photo} alt="Profile" style={{ width: "100%", 
+              height: "100%", objectFit: "cover" }} />
         ) : (
           <DefaultAvatarIcon />
         )}
       </div>
 
       {editing && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", 
+          gap: "8px", width: "100%" }}>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -113,7 +120,8 @@ function TitleChips({
 
   return (
     <div style={{ marginTop: "10px" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", 
+          gap: "8px" }}>
         {titles.map((title, i) => (
           <span
             key={`${title}-${i}`}
@@ -274,6 +282,8 @@ function TaskPreferences() {
 }
 
 export default function ProfilePage() {
+  const { onLogin } = useOutletContext<{ onLogin: () => void }>();
+  const currentUser = useAuthConnector();
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -292,6 +302,13 @@ export default function ProfilePage() {
     };
   }, []);
 
+   useEffect(() => {
+  if (!currentUser) {
+    setEditing(false);
+  }
+}, [currentUser]);
+
+
   function startEditing() {
     setDraft(profile);
     setEditing(true);
@@ -308,31 +325,108 @@ export default function ProfilePage() {
     setEditing(false);
   }
 
+  // CHANGED TODAY: Logging out while editing saves the current draft first.
+  // This prevents Profile changes from being lost when Logout is selected.
+  async function handleLogout() {
+    if (editing) {
+      await saveProfile(draft);
+      setProfile(draft);
+      setEditing(false);
+    }
+
+    await logout();
+  }
+
   const active = editing ? draft : profile;
 
+ 
   if (loading) {
-    return (
+     return (
       <div>
         <div className="task-list-header">
           <h1>Profile</h1>
         </div>
-        <div className="glass-panel" style={{ padding: "28px", marginTop: "24px", maxWidth: "700px" }}>
-          <p style={{ color: "rgba(255,255,255,0.4)" }}>Loading profile…</p>
+
+        <div
+          className="glass-panel"
+          style={{
+            padding: "28px",
+            marginTop: "24px",
+            maxWidth: "700px",
+          }}
+        >
+          <p style={{ color: "rgba(255,255,255,0.4)" }}>
+            Loading profile…
+          </p>
         </div>
       </div>
     );
   }
-
+  
   return (
     <div>
+      {/* CHANGED TODAY: Profile header is now authentication-aware.
+          Guest users only see Login.
+          Authenticated users see Edit Profile and Logout.
+          While editing, Logout remains available and saves the draft first. */}
       <div className="task-list-header">
         <h1>Profile</h1>
-        {!editing ? (
-          <button onClick={startEditing}>✎ Edit Profile</button>
+
+        {!currentUser ? (
+          <button
+            type="button"
+            onClick={onLogin}
+          >
+            Login
+          </button>
+        ) : editing ? (
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+            }}
+          >
+            <button
+              className="btn-primary"
+              onClick={handleSave}
+            >
+              Save Changes
+            </button>
+
+            <button
+              type="button"
+              onClick={cancelEditing}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          </div>
         ) : (
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button className="btn-primary" onClick={handleSave}>Save Changes</button>
-            <button onClick={cancelEditing}>Cancel</button>
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={startEditing}
+            >
+              ✎ Edit Profile
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
         )}
       </div>
@@ -352,35 +446,76 @@ export default function ProfilePage() {
         <Avatar
           photo={active.photo}
           editing={editing}
-          onChangePhoto={(dataUrl) => setDraft((d) => ({ ...d, photo: dataUrl }))}
-          onRemovePhoto={() => setDraft((d) => ({ ...d, photo: "" }))}
+          onChangePhoto={(dataUrl) =>
+            setDraft((d) => ({
+              ...d,
+              photo: dataUrl,
+            }))
+          }
+          onRemovePhoto={() =>
+            setDraft((d) => ({
+              ...d,
+              photo: "",
+            }))
+          }
         />
 
-        <div style={{ flex: 1, minWidth: "260px" }}>
+        <div
+          style={{
+            flex: 1,
+            minWidth: "260px",
+          }}
+        >
           {/* Name */}
           {editing ? (
-            <div className="form-field" style={{ marginBottom: "12px" }}>
+            <div
+              className="form-field"
+              style={{ marginBottom: "12px" }}
+            >
               <label>Name</label>
+
               <input
                 value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    name: e.target.value,
+                  }))
+                }
                 placeholder="Your name"
                 style={{ fontSize: "18px" }}
               />
             </div>
           ) : (
             <h1 style={{ marginBottom: "4px" }}>
-              {profile.name || <span style={{ color: "rgba(255,255,255,0.3)" }}>Unnamed</span>}
+              {profile.name || (
+                <span
+                  style={{
+                    color: "rgba(255,255,255,0.3)",
+                  }}
+                >
+                  Unnamed
+                </span>
+              )}
             </h1>
           )}
 
           {/* Primary title */}
           {editing ? (
-            <div className="form-field" style={{ marginBottom: "4px" }}>
+            <div
+              className="form-field"
+              style={{ marginBottom: "4px" }}
+            >
               <label>Title</label>
+
               <input
                 value={draft.primaryTitle}
-                onChange={(e) => setDraft((d) => ({ ...d, primaryTitle: e.target.value }))}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    primaryTitle: e.target.value,
+                  }))
+                }
                 placeholder="e.g. Team Lead"
               />
             </div>
@@ -404,26 +539,68 @@ export default function ProfilePage() {
           <TitleChips
             titles={active.titles}
             editing={editing}
-            onAdd={(title) => setDraft((d) => ({ ...d, titles: [...d.titles, title] }))}
-            onRemove={(i) => setDraft((d) => ({ ...d, titles: d.titles.filter((_, idx) => idx !== i) }))}
+            onAdd={(title) =>
+              setDraft((d) => ({
+                ...d,
+                titles: [...d.titles, title],
+              }))
+            }
+            onRemove={(i) =>
+              setDraft((d) => ({
+                ...d,
+                titles: d.titles.filter(
+                  (_, idx) => idx !== i,
+                ),
+              }))
+            }
           />
 
           <hr style={{ margin: "18px 0" }} />
 
           {/* Bio */}
-          <label style={{ display: "block", marginBottom: "6px" }}>Bio</label>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "6px",
+            }}
+          >
+            Bio
+          </label>
+
           {editing ? (
             <textarea
               rows={5}
               value={draft.bio}
-              onChange={(e) => setDraft((d) => ({ ...d, bio: e.target.value }))}
+              onChange={(e) =>
+                setDraft((d) => ({
+                  ...d,
+                  bio: e.target.value,
+                }))
+              }
               placeholder="Write a little about yourself…"
             />
           ) : (
-            <p style={{ lineHeight: 1.7, color: "rgba(255,255,255,0.65)", fontStyle: profile.bio ? "italic" : "normal" }}>
-              {profile.bio
-                ? `"${profile.bio}"`
-                : <span style={{ color: "rgba(255,255,255,0.3)", fontStyle: "normal" }}>No bio yet.</span>}
+            <p
+              style={{
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.65)",
+                fontStyle: profile.bio
+                  ? "italic"
+                  : "normal",
+              }}
+            >
+              {profile.bio ? (
+                `"${profile.bio}"`
+              ) : (
+                <span
+                  style={{
+                    color: "rgba(255,255,255,0.3)",
+                    fontStyle: "normal",
+                  }}
+                >
+                  No bio yet.
+                </span>
+              )}
             </p>
           )}
         </div>
