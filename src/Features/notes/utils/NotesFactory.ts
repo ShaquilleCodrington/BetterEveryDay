@@ -11,10 +11,17 @@
 import type { Notebook, Page, EmptyBlock } from "../types";
 
         //Notebook
-        export function createNotebook(title = "Untitled Notebook"): Notebook
+        export function createNotebook(title = "Untitled Notebook",
+             userId: string | null = null): Notebook
         {
+             const now = new Date().toISOString();
+
             return {
                 id: crypto.randomUUID(),
+                userId,
+                createdAt: now,
+                updatedAt: now,
+
                 title,
                 pageIds: [],
                 settings: {},
@@ -29,12 +36,16 @@ import type { Notebook, Page, EmptyBlock } from "../types";
             {
 
                     // Create the page's initial empty block.
-                
-               const pageId = crypto.randomUUID();
+                const now = new Date().toISOString();
+
+                const pageId = crypto.randomUUID();
 
                 const page: Page = {
                     id: pageId,
                     notebookId,
+                    createdAt: now,
+                    updatedAt: now,
+
                     title,
                     blockIds: [],
                 };
@@ -52,11 +63,16 @@ import type { Notebook, Page, EmptyBlock } from "../types";
         export function createEmptyBlock( pageId: string):
         EmptyBlock
         {
+            const now = new Date().toISOString();
+
             return {
                 id:crypto.randomUUID(),
                     pageId,
                     type: "empty",
                     content: "",
+
+                     createdAt: now,
+                     updatedAt: now,
 
             };
         }

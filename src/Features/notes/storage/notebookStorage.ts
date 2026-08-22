@@ -14,6 +14,81 @@ const NOTEBOOKS_KEY = "notes.notebooks";
 const PAGES_KEY = "notes.pages";
 const BLOCKS_KEY = "notes.blocks";
 
+
+function repairNotebook(
+    notebook: Notebook
+): Notebook
+{
+    const now = new Date().toISOString();
+
+    return {
+        ...notebook,
+
+        userId: notebook.userId ?? null,
+
+        createdAt:
+            notebook.createdAt ?? now,
+
+        updatedAt:
+            notebook.updatedAt ?? now,
+    };
+}
+
+
+function repairPage(
+    page: Page
+): Page
+{
+    const now = new Date().toISOString();
+
+    return {
+        ...page,
+
+        createdAt:
+            page.createdAt ?? now,
+
+        updatedAt:
+            page.updatedAt ?? now,
+    };
+}
+
+function repairBlock(
+    block: Block
+): Block
+{
+    const now = new Date().toISOString();
+
+    return {
+        ...block,
+
+        createdAt:
+            block.createdAt ?? now,
+
+        updatedAt:
+            block.updatedAt ?? now,
+    };
+}
+
+
+function repairNotebookFolder(
+    folder: NotebookFolder
+): NotebookFolder
+{
+    const now = new Date().toISOString();
+
+    return {
+        ...folder,
+
+        userId: folder.userId ?? null,
+
+        createdAt:
+            folder.createdAt ?? now,
+
+        updatedAt:
+            folder.updatedAt ?? now,
+    };
+}
+
     //notebook storage
 export function loadNotebooks(): Notebook[]
 {
@@ -24,7 +99,34 @@ export function loadNotebooks(): Notebook[]
         return [];
     }
 
-    return JSON.parse(data);
+    const notebooks: Notebook[] =
+        JSON.parse(data);
+
+    let needsRepair = false;
+
+    const repairedNotebooks =
+        notebooks.map((notebook) =>
+        {
+            if (
+                notebook.userId === undefined ||
+                notebook.createdAt === undefined ||
+                notebook.updatedAt === undefined
+            )
+            {
+                needsRepair = true;
+
+                return repairNotebook(notebook);
+            }
+
+            return notebook;
+        });
+
+    if (needsRepair)
+    {
+        saveNotebooks(repairedNotebooks);
+    }
+
+    return repairedNotebooks;
 }
 
 export function saveNotebooks(notebooks: Notebook[]): void{
@@ -42,7 +144,33 @@ export function loadPages(): Page[]
         return [];
     }
 
-    return JSON.parse(data);
+    const pages: Page[] =
+        JSON.parse(data);
+
+    let needsRepair = false;
+
+    const repairedPages =
+        pages.map((page) =>
+        {
+            if (
+                page.createdAt === undefined ||
+                page.updatedAt === undefined
+            )
+            {
+                needsRepair = true;
+
+                return repairPage(page);
+            }
+
+            return page;
+        });
+
+    if (needsRepair)
+    {
+        savePages(repairedPages);
+    }
+
+    return repairedPages;
 }
 
 export function savePages(pages: Page[]): void{
@@ -60,7 +188,33 @@ export function loadBlocks(): Block[]
         return [];
     }
 
-    return JSON.parse(data);
+    const blocks: Block[] =
+        JSON.parse(data);
+
+    let needsRepair = false;
+
+    const repairedBlocks =
+        blocks.map((block) =>
+        {
+            if (
+                block.createdAt === undefined ||
+                block.updatedAt === undefined
+            )
+            {
+                needsRepair = true;
+
+                return repairBlock(block);
+            }
+
+            return block;
+        });
+
+    if (needsRepair)
+    {
+        saveBlocks(repairedBlocks);
+    }
+
+    return repairedBlocks;
 }
 
 export function saveBlocks(blocks: Block[]): void{
@@ -80,7 +234,38 @@ export function loadNotebookFolders(): NotebookFolder[]
         return [];
     }
 
-    return JSON.parse(data);
+    const folders: NotebookFolder[] =
+        JSON.parse(data);
+
+    let needsRepair = false;
+
+    const repairedFolders =
+        folders.map((folder) =>
+        {
+            if (
+                folder.userId === undefined ||
+                folder.createdAt === undefined ||
+                folder.updatedAt === undefined
+            )
+            {
+                needsRepair = true;
+
+                return repairNotebookFolder(
+                    folder
+                );
+            }
+
+            return folder;
+        });
+
+    if (needsRepair)
+    {
+        saveNotebookFolders(
+            repairedFolders
+        );
+    }
+
+    return repairedFolders;
 }
 
 export function saveNotebookFolders(

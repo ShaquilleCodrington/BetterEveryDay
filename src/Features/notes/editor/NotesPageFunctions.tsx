@@ -17,6 +17,7 @@ import {
 } from "../utils/NotesFactory";
 
 import { deleteSession } from "../../journey/Storage/sessionStorage";
+import { useAuthConnector } from "../../../Services/firebase/connector";
 
 export function useNotesPageFunctions({
     selectedPageId,
@@ -28,7 +29,8 @@ export function useNotesPageFunctions({
     // ==================================================
     // State
     // ==================================================
-
+    
+    const  currentUser  = useAuthConnector();
     const [notebooks, setNotebooks] = useState<Notebook[]>([]);
     const [pages, setPages] = useState<Page[]>([]);
     const [blocks, setBlocks] = useState<Block[]>([]);
@@ -101,10 +103,18 @@ export function useNotesPageFunctions({
    
     function handleCreateFolder()
         {
+            
+             const now = new Date().toISOString();
+             const userId = currentUser?.uid ?? null;
+
             const newFolder: NotebookFolder =
             {
                 id: crypto.randomUUID(),
                 title: "Untitled Folder",
+                userId,
+
+                createdAt: now,
+                updatedAt: now,
             };
 
             const updatedFolders =
@@ -142,6 +152,10 @@ export function useNotesPageFunctions({
         title: string
     )
     {
+
+        const updatedAt =
+            new Date().toISOString();
+
         const updatedFolders =
             folders.map((folder) =>
             {
@@ -153,6 +167,7 @@ export function useNotesPageFunctions({
                 return {
                     ...folder,
                     title,
+                    updatedAt,
                 };
             });
 
@@ -172,6 +187,9 @@ export function useNotesPageFunctions({
         setFolders(updatedFolders);
         saveNotebookFolders(updatedFolders);
 
+         const updatedAt =
+            new Date().toISOString();
+
         const updatedNotebooks =
             notebooks.map((notebook) =>
             {
@@ -180,8 +198,9 @@ export function useNotesPageFunctions({
                     return notebook;
                 }
 
-                const { folderId: _removed, ...notebookWithoutFolder } = notebook;
-                return notebookWithoutFolder;
+                const { folderId: _removed, ...notebookWithoutFolder }
+                 = notebook;
+                return { ...notebookWithoutFolder, updatedAt,};
             });
 
         setNotebooks(updatedNotebooks);
@@ -205,6 +224,10 @@ export function useNotesPageFunctions({
         const updatedNotebooks =
             notebooks.map((notebook) =>
             {
+
+        const updatedAt =
+            new Date().toISOString();
+
                 if (notebook.id !== notebookId)
                 {
                     return notebook;
@@ -213,6 +236,7 @@ export function useNotesPageFunctions({
                 return {
                     ...notebook,
                     folderId,
+                    updatedAt,
                 };
             });
 
@@ -222,6 +246,10 @@ export function useNotesPageFunctions({
 
      function handleRemoveNotebookFromFolder(notebookId: string)
     {
+
+        const updatedAt =
+            new Date().toISOString();
+
         const updatedNotebooks =
             notebooks.map((notebook) =>
             {
@@ -231,7 +259,7 @@ export function useNotesPageFunctions({
                 }
 
                 const { folderId, ...notebookWithoutFolder } = notebook;
-                return notebookWithoutFolder;
+                return { ...notebookWithoutFolder, updatedAt };
             });
 
         setNotebooks(updatedNotebooks);
@@ -275,6 +303,10 @@ export function useNotesPageFunctions({
         title: string
     )
     {
+
+        const updatedAt =
+            new Date().toISOString();
+
         const updatedNotebooks =
             notebooks.map((notebook) =>
             {
@@ -288,6 +320,7 @@ export function useNotesPageFunctions({
                 return {
                     ...notebook,
                     title,
+                    updatedAt,
                 };
             });
 
@@ -357,6 +390,11 @@ export function useNotesPageFunctions({
         setBlocks(updatedBlocks);
         saveBlocks(updatedBlocks);
 
+
+        const updatedAt =
+            new Date().toISOString();
+
+
         const updatedNotebooks =
             notebooks.map((notebook) =>
             {
@@ -372,7 +410,7 @@ export function useNotesPageFunctions({
                     pageIds: [
                         ...notebook.pageIds,
                         page.id,
-                    ],
+                    ], updatedAt,
                 };
             });
 
@@ -388,33 +426,69 @@ export function useNotesPageFunctions({
     {}
 
     function handlePageTitleChange(
-        title: string
-    )
+    title: string
+)
+{
+    if (!selectedPageId)
     {
-        if (!selectedPageId)
-        {
-            return;
-        }
-
-        const updatedPages =
-            pages.map((page) =>
-            {
-                if (
-                    page.id !== selectedPageId
-                )
-                {
-                    return page;
-                }
-
-                return {
-                    ...page,
-                    title,
-                };
-            });
-
-        setPages(updatedPages);
-        savePages(updatedPages);
+        return;
     }
+
+    // Find the actual Page before mutating the collection.
+    const page =
+        pages.find(
+            (item) =>
+                item.id === selectedPageId
+        );
+
+    if (!page)
+    {
+        return;
+    }
+
+    const updatedAt =
+        new Date().toISOString();
+
+    const updatedPages =
+        pages.map((page) =>
+        {
+            if (
+                page.id !== selectedPageId
+            )
+            {
+                return page;
+            }
+
+            return {
+                ...page,
+                title,
+                updatedAt,
+            };
+        });
+
+    setPages(updatedPages);
+    savePages(updatedPages);
+
+    // Page mutation propagates to Notebook.
+    const updatedNotebooks =
+        notebooks.map((notebook) =>
+        {
+            if (
+                notebook.id !== page.notebookId
+            )
+            {
+                return notebook;
+            }
+
+            return {
+                ...notebook,
+                updatedAt,
+            };
+        });
+
+    setNotebooks(updatedNotebooks);
+    saveNotebooks(updatedNotebooks);
+}
 
     function handleDeletePage(
         pageId: string
@@ -434,9 +508,13 @@ export function useNotesPageFunctions({
     setBlocks(updatedBlocks);
     saveBlocks(updatedBlocks);
 
+     const updatedAt =
+            new Date().toISOString();
+            
     const updatedNotebooks = notebooks.map((notebook) => ({
         ...notebook,
         pageIds: notebook.pageIds.filter((id) => id !== pageId),
+        updatedAt,
     }));
 
     setNotebooks(updatedNotebooks);
@@ -460,10 +538,26 @@ export function useNotesPageFunctions({
         title: string
     )
     {
+        const page =
+            pages.find(
+                (item) =>
+                    item.id === pageId
+            );
+
+        if (!page)
+        {
+            return;
+        }
+
+        const updatedAt =
+            new Date().toISOString();
+
         const updatedPages =
             pages.map((page) =>
             {
-                if (page.id !== pageId)
+                if (
+                    page.id !== pageId
+                )
                 {
                     return page;
                 }
@@ -471,277 +565,727 @@ export function useNotesPageFunctions({
                 return {
                     ...page,
                     title,
+                    updatedAt,
                 };
             });
 
         setPages(updatedPages);
         savePages(updatedPages);
+
+        // Page mutation propagates to Notebook.
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !== page.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
     }
 
     // ==================================================
     // Block Actions
     // ==================================================
 
-    function handleUpdateBlock( blockId: string, 
-            content: any)
+    function handleUpdateBlock(
+        blockId: string,
+        content: any
+    )
     {
-        const updatedBlocks = blocks.map((block) =>
-    {
-        if (block.id !== blockId) return block;
+        const block =
+            blocks.find(
+                (item) =>
+                    item.id === blockId
+            );
 
-        return {
-            ...block,
-            content,
-        };
-    });
+        if (!block)
+        {
+            return;
+        }
 
-    setBlocks(updatedBlocks);
-    saveBlocks(updatedBlocks);
+        const updatedAt =
+            new Date().toISOString();
+
+        // Source object changes first.
+        const updatedBlocks =
+            blocks.map((block) =>
+            {
+                if (
+                    block.id !== blockId
+                )
+                {
+                    return block;
+                }
+
+                return {
+                    ...block,
+                    content,
+                    updatedAt,
+                };
+            });
+
+        setBlocks(updatedBlocks);
+        saveBlocks(updatedBlocks);
+
+
+        // ==================================================
+        // Block → Page
+        // ==================================================
+
+        const page =
+            pages.find(
+                (item) =>
+                    item.id === block.pageId
+            );
+
+        if (!page)
+        {
+            return;
+        }
+
+        const updatedPages =
+            pages.map((page) =>
+            {
+                if (
+                    page.id !== block.pageId
+                )
+                {
+                    return page;
+                }
+
+                return {
+                    ...page,
+                    updatedAt,
+                };
+            });
+
+        setPages(updatedPages);
+        savePages(updatedPages);
+
+
+        // ==================================================
+        // Page → Notebook
+        // ==================================================
+
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !== page.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
     }
+
 
     function handleCreateBlockAfter(
         blockId: string
     )
     {
-    if (!selectedPage) return;
-
-    const newBlock = {
-        id: crypto.randomUUID(),
-        pageId: selectedPage.id,
-        type: "empty",
-        content: "",
-    } as Block;
-
-    const updatedBlocks = [...blocks, newBlock];
-
-    setBlocks(updatedBlocks);
-    saveBlocks(updatedBlocks);
-
-    const updatedPages = pages.map((page) =>
-    {
-        if (page.id !== selectedPage.id) return page;
-
-        const index = page.blockIds.indexOf(blockId);
-
-        const newBlockIds = [...page.blockIds];
-        newBlockIds.splice(index + 1, 0, newBlock.id);
-
-        return {
-            ...page,
-            blockIds: newBlockIds,
-        };
-    });
-
-    setPages(updatedPages);
-    savePages(updatedPages);
-
-    setFocusedBlockId(newBlock.id);
-    }
-
-    function handleDeleteBlock( blockId: string  )
-    {
-    if (!selectedPage) return;
-
-    const page = pages.find((p) => p.id === selectedPage.id);
-    if (!page) return;
-
-    if (page.blockIds.length <= 1) return;
-
-    const deletedIndex = page.blockIds.indexOf(blockId);
-
-    const previousBlockId =
-        page.blockIds[deletedIndex - 1] ?? null;
-
-    const updatedBlocks = blocks.filter(
-        (block) => block.id !== blockId
-    );
-
-    setBlocks(updatedBlocks);
-    saveBlocks(updatedBlocks);
-
-    const updatedPages = pages.map((page) =>
-    {
-        if (page.id !== selectedPage.id) return page;
-
-        return {
-            ...page,
-            blockIds: page.blockIds.filter((id) => id !== blockId),
-        };
-    });
-
-    setPages(updatedPages);
-    savePages(updatedPages);
-
-    setFocusedBlockId(previousBlockId);
-    }
-
-    function handleConvertBlock(
-        blockId: string, type: BlockType,
-        content: any
-    ){
-        const updatedBlocks = blocks.map((block) =>
+        if (!selectedPage)
         {
-            if (block.id !== blockId)
-            {
-                return block;
-            }
+            return;
+        }
 
-             if (block.type === type && block.content === content) 
-            {
-                return block;
-            }
+        const now =
+            new Date().toISOString();
 
-            return  {
-                ...block, type, content,
-            };
-        });
+        const newBlock: Block =
+        {
+            id: crypto.randomUUID(),
+
+            pageId:
+                selectedPage.id,
+
+            type: "empty",
+
+            content: "",
+
+            createdAt: now,
+            updatedAt: now,
+        } as Block;
+
+
+        const updatedBlocks =
+        [
+            ...blocks,
+            newBlock,
+        ];
 
         setBlocks(updatedBlocks);
         saveBlocks(updatedBlocks);
 
-    //  force UI sync boundary
-    setFocusedBlockId(blockId);
-            }
-        
-    
-    
 
+        const updatedPages =
+            pages.map((page) =>
+            {
+                if (
+                    page.id !== selectedPage.id
+                )
+                {
+                    return page;
+                }
+
+                const index =
+                    page.blockIds.indexOf(
+                        blockId
+                    );
+
+                const newBlockIds =
+                    [...page.blockIds];
+
+                newBlockIds.splice(
+                    index + 1,
+                    0,
+                    newBlock.id
+                );
+
+                return {
+                    ...page,
+
+                    blockIds:
+                        newBlockIds,
+
+                    updatedAt: now,
+                };
+            });
+
+        setPages(updatedPages);
+        savePages(updatedPages);
+
+
+        // Page changed → Notebook changed.
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !==
+                    selectedPage.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt: now,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
+
+        setFocusedBlockId(
+            newBlock.id
+        );
+    }
+
+
+    function handleDeleteBlock(
+        blockId: string
+    )
+    {
+        if (!selectedPage)
+        {
+            return;
+        }
+
+        const page =
+            pages.find(
+                (p) =>
+                    p.id === selectedPage.id
+            );
+
+        if (!page)
+        {
+            return;
+        }
+
+        if (
+            page.blockIds.length <= 1
+        )
+        {
+            return;
+        }
+
+        const deletedIndex =
+            page.blockIds.indexOf(
+                blockId
+            );
+
+        const previousBlockId =
+            page.blockIds[
+                deletedIndex - 1
+            ] ?? null;
+
+
+        const updatedBlocks =
+            blocks.filter(
+                (block) =>
+                    block.id !== blockId
+            );
+
+        setBlocks(updatedBlocks);
+        saveBlocks(updatedBlocks);
+
+
+        const updatedAt =
+            new Date().toISOString();
+
+        const updatedPages =
+            pages.map((page) =>
+            {
+                if (
+                    page.id !== selectedPage.id
+                )
+                {
+                    return page;
+                }
+
+                return {
+                    ...page,
+
+                    blockIds:
+                        page.blockIds.filter(
+                            (id) =>
+                                id !== blockId
+                        ),
+
+                    updatedAt,
+                };
+            });
+
+        setPages(updatedPages);
+        savePages(updatedPages);
+
+
+        // Page changed → Notebook changed.
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !== page.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
+
+        setFocusedBlockId(
+            previousBlockId
+        );
+    }
+
+
+    function handleConvertBlock(
+        blockId: string,
+        type: BlockType,
+        content: any
+    )
+    {
+        const block =
+            blocks.find(
+                (item) =>
+                    item.id === blockId
+            );
+
+        if (!block)
+        {
+            return;
+        }
+
+        if (
+            block.type === type &&
+            block.content === content
+        )
+        {
+            return;
+        }
+
+        const updatedAt =
+            new Date().toISOString();
+
+        const updatedBlocks =
+            blocks.map((block) =>
+            {
+                if (
+                    block.id !== blockId
+                )
+                {
+                    return block;
+                }
+
+                return {
+                    ...block,
+                    type,
+                    content,
+                    updatedAt,
+                };
+            });
+
+        setBlocks(updatedBlocks);
+        saveBlocks(updatedBlocks);
+
+
+        // Block conversion changes the Page.
+        const page =
+            pages.find(
+                (item) =>
+                    item.id === block.pageId
+            );
+
+        if (!page)
+        {
+            return;
+        }
+
+        const updatedPages =
+            pages.map((page) =>
+            {
+                if (
+                    page.id !== block.pageId
+                )
+                {
+                    return page;
+                }
+
+                return {
+                    ...page,
+                    updatedAt,
+                };
+            });
+
+        setPages(updatedPages);
+        savePages(updatedPages);
+
+
+        // Page mutation propagates to Notebook.
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !== page.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
+
+
+        // Force UI sync boundary.
+        setFocusedBlockId(
+            blockId
+        );
+    }
 
 
     function handleCreateBlockAtEnd()
-{
-    if (!selectedPage) return;
-
-    const newBlock: Block = {
-        id: crypto.randomUUID(),
-        pageId: selectedPage.id,
-        type: "empty",
-        content: "",
-    };
-
-    const updatedBlocks = [...blocks, newBlock];
-
-    setBlocks(updatedBlocks);
-    saveBlocks(updatedBlocks);
-
-    const updatedPages = pages.map((page) =>
     {
-        if (page.id !== selectedPage.id) return page;
+        if (!selectedPage)
+        {
+            return;
+        }
 
-        return {
-            ...page,
-            blockIds: [...page.blockIds, newBlock.id],
-        };
-    });
+        const now =
+            new Date().toISOString();
 
-    setPages(updatedPages);
-    savePages(updatedPages);
+        const newBlock: Block =
+        {
+            id: crypto.randomUUID(),
 
-    setFocusedBlockId(newBlock.id);
-}
+            pageId:
+                selectedPage.id,
+
+            type: "empty",
+
+            content: "",
+
+            createdAt: now,
+            updatedAt: now,
+        } as Block;
+
+
+        const updatedBlocks =
+        [
+            ...blocks,
+            newBlock,
+        ];
+
+        setBlocks(updatedBlocks);
+        saveBlocks(updatedBlocks);
+
+
+        const updatedPages =
+            pages.map((page) =>
+            {
+                if (
+                    page.id !== selectedPage.id
+                )
+                {
+                    return page;
+                }
+
+                return {
+                    ...page,
+
+                    blockIds:
+                    [
+                        ...page.blockIds,
+                        newBlock.id,
+                    ],
+
+                    updatedAt: now,
+                };
+            });
+
+        setPages(updatedPages);
+        savePages(updatedPages);
+
+
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !==
+                    selectedPage.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt: now,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
+
+        setFocusedBlockId(
+            newBlock.id
+        );
+    }
+
+
     // ==================================================
     // Canvas Actions
     // ==================================================
 
-    function handleCanvasClick( event: React.MouseEvent )
-    {
-        const target = event.target as HTMLElement;
-
-    if (
-        target.closest("[data-block]")
+    function handleCanvasClick(
+        event: React.MouseEvent
     )
     {
-        return;
+        const target =
+            event.target as HTMLElement;
+
+        if (
+            target.closest("[data-block]")
+        )
+        {
+            return;
+        }
+
+        handleCreateBlockAtEnd();
     }
 
-    handleCreateBlockAtEnd();
-    }
 
     function handleInsertTaskBlock(
         taskId: string
     )
     {
-       
-    if (!selectedPage) return;
-
-    const taskBlock: Block = {
-        id: crypto.randomUUID(),
-        pageId: selectedPage.id,
-        type: "task",
-        content: {
-            taskId,
-        },
-    };
-
-    const updatedBlocks = [...blocks, taskBlock];
-
-    setBlocks(updatedBlocks);
-    saveBlocks(updatedBlocks);
-
-    const updatedPages = pages.map((page) =>
-    {
-        if (page.id !== selectedPage.id) return page;
-
-        return {
-            ...page,
-            blockIds: [...page.blockIds, taskBlock.id],
-        };
-    });
-
-    setPages(updatedPages);
-    savePages(updatedPages);
-
-    // Focus the newly inserted task block
-    setFocusedBlockId(taskBlock.id);
-
-    // Close the picker
-    setShowTaskPicker(false);
-    }
-
-// ==================================================
-// Task Actions
-// ==================================================
-
-function handleEditTask(updatedTask: Task)
-{
-    const updatedTasks = tasks.map((task) =>
-    {
-        if (task.id !== updatedTask.id)
+        if (!selectedPage)
         {
-            return task;
+            return;
         }
 
-        return updatedTask;
-    });
+        const now =
+            new Date().toISOString();
 
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
-}
+        const taskBlock: Block =
+        {
+            id: crypto.randomUUID(),
 
-function handleDeleteTask(taskId: string)
-{
-    const updatedTasks = tasks.filter(
-        (task) => task.id !== taskId
-    );
+            pageId:
+                selectedPage.id,
 
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
-}
+            type: "task",
 
-function handleCreateTask(task: Task) 
-{
-    setTasks(prev => {
-        const updated = [...prev, task];
+            content:
+            {
+                taskId,
+            },
 
-        saveTasks(updated);
-
-        return updated;
-    });
-}
+            createdAt: now,
+            updatedAt: now,
+        } as Block;
 
 
+        const updatedBlocks =
+        [
+            ...blocks,
+            taskBlock,
+        ];
 
-     // ==================================================
+        setBlocks(updatedBlocks);
+        saveBlocks(updatedBlocks);
+
+
+        const updatedPages =
+            pages.map((page) =>
+            {
+                if (
+                    page.id !== selectedPage.id
+                )
+                {
+                    return page;
+                }
+
+                return {
+                    ...page,
+
+                    blockIds:
+                    [
+                        ...page.blockIds,
+                        taskBlock.id,
+                    ],
+
+                    updatedAt: now,
+                };
+            });
+
+        setPages(updatedPages);
+        savePages(updatedPages);
+
+
+        const updatedNotebooks =
+            notebooks.map((notebook) =>
+            {
+                if (
+                    notebook.id !==
+                    selectedPage.notebookId
+                )
+                {
+                    return notebook;
+                }
+
+                return {
+                    ...notebook,
+                    updatedAt: now,
+                };
+            });
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
+
+
+        // Focus the newly inserted task block.
+        setFocusedBlockId(
+            taskBlock.id
+        );
+
+        // Close the picker.
+        setShowTaskPicker(false);
+    }
+
+
+    // ==================================================
+    // Task Actions
+    // ==================================================
+
+    function handleEditTask(
+        updatedTask: Task
+    )
+    {
+        const updatedTasks =
+            tasks.map((task) =>
+            {
+                if (
+                    task.id !== updatedTask.id
+                )
+                {
+                    return task;
+                }
+
+                return updatedTask;
+            });
+
+        setTasks(updatedTasks);
+        saveTasks(updatedTasks);
+    }
+
+
+    function handleDeleteTask(
+        taskId: string
+    )
+    {
+        const updatedTasks =
+            tasks.filter(
+                (task) =>
+                    task.id !== taskId
+            );
+
+        setTasks(updatedTasks);
+        saveTasks(updatedTasks);
+    }
+
+
+    function handleCreateTask(
+        task: Task
+    )
+    {
+        setTasks((prev) =>
+        {
+            const updated =
+            [
+                ...prev,
+                task,
+            ];
+
+            saveTasks(updated);
+
+            return updated;
+        });
+    }
+
+
+    // ==================================================
     // Return
     // ==================================================
 
@@ -776,6 +1320,7 @@ function handleCreateTask(task: Task)
         handleDeletePage,
         handleRenamePage,
         handleDeleteNotebook,
+
         handleCreateBlockAtEnd,
         handleCanvasClick,
         handleInsertTaskBlock,
@@ -783,7 +1328,7 @@ function handleCreateTask(task: Task)
         handleEditTask,
         handleDeleteTask,
         handleConvertBlock,
-        handleCreateTask, 
+        handleCreateTask,
 
         reloadData,
 
@@ -794,6 +1339,5 @@ function handleCreateTask(task: Task)
         handleRenameFolder,
         handleAssignNotebookToFolder,
         handleRemoveNotebookFromFolder,
-   
     };
 }

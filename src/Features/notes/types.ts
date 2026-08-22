@@ -18,12 +18,20 @@ import type { ChecklistItem } from "../../Components/Checklist";
     {
         id: string;
         title: string;
+
+        userId: string | null;
+        createdAt: string;
+        updatedAt: string;
     }
 
     //notebook
     export interface Notebook
     {
         id: string;
+        userId: string | null;
+        createdAt: string;
+        updatedAt: string;
+
         title: string;
         icon?: string;
         color?: string;
@@ -42,6 +50,9 @@ import type { ChecklistItem } from "../../Components/Checklist";
     {
         id: string;
         notebookId: string;
+        createdAt: string;
+        updatedAt: string;
+
         title: string;
 
             // Ordered list of blocks contained in this page.
@@ -60,6 +71,10 @@ import type { ChecklistItem } from "../../Components/Checklist";
         id: string;
         pageId: string;
         type: BlockType;
+
+       
+        createdAt: string;
+        updatedAt: string;
     }
 
     //block Content

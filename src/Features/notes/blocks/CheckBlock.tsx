@@ -7,7 +7,9 @@ import Tooltip from "../../../Components/Tooltip";
 interface Props {
     block: Block;
 
-    onUpdateBlock: (blockId: string, content: any) => void;
+    onUpdateBlock: (blockId: string, content: any,
+            upadatedAt: string
+    ) => void;
     onConvertBlock: (  blockId: string,  type: BlockType,
                          content: any  ) => void;
 
@@ -103,6 +105,20 @@ function handleWrapperKeyDown(
     );
 }
 
+
+    function handleItemsChange(
+        updatedItems: typeof items
+    ): void {
+        const updatedAt =
+            new Date().toISOString();
+
+        onUpdateBlock(
+            block.id,
+            updatedItems,
+            updatedAt
+        );
+    }
+
   return (
     <div
         onKeyDown={handleWrapperKeyDown}
@@ -134,9 +150,7 @@ function handleWrapperKeyDown(
         >
             <CheckList
                 items={block.content}
-                onItemsChange={(items) =>
-                    onUpdateBlock(block.id, items)
-                }
+                onItemsChange={handleItemsChange}
                 onExit={() =>
                     onCreateBlockAfter?.(block.id)
                 }

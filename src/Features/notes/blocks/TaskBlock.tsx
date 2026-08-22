@@ -51,6 +51,7 @@ export default function TaskBlock(
         onEditTask({
             ...matchedTask,
             checklist: items,
+            updatedAt: new Date().toISOString(),
         });
     }
     

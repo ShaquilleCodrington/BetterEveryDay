@@ -4,6 +4,10 @@ export type Task = {
 
     id: string;
     userId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    completedAt: string | null;
+    
     title: string;
     notes: string;
     completed: boolean;
@@ -11,7 +15,6 @@ export type Task = {
     status: string;
     priority: string;
     dueDate: string;
-    updatedAt: string;
     checklist: ChecklistItem[];
 };
 

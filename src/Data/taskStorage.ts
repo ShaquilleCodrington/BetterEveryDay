@@ -16,9 +16,15 @@ const STORAGE_KEY = "tasks";
 //Repairs older Tasks so every Task has an explicit
 //userId field.
 export function repairTask(task: Task): Task {
+
+     const now = new Date().toISOString();
+
     return {
         ...task,
         userId: task.userId ?? null,
+        createdAt: task.createdAt ?? now,
+        updatedAt: task.updatedAt ?? now,
+        completedAt: task.completedAt ?? null,
     };
 }
 
@@ -32,16 +38,7 @@ export function loadTasks(): Task[] {
     }
 
     const tasks: Task[] = JSON.parse(savedTasks);
-// ==================================================
-    // 2026-08-18 — State Convergence
-    // --------------------------------------------------
-    // Repair existing Tasks so older localStorage data
-    // receives the new userId field.
-    //
-    // This keeps the Task model backward compatible:
-    // older Tasks become userId: null instead of being
-    // treated as invalid or requiring migration.
-    // ==================================================
+
 
     const seenIds = new Set<string>();
     let needsRepair = false;
@@ -69,7 +66,11 @@ export function loadTasks(): Task[] {
         // Repair missing userId
         // ----------------------------------------------
 
-        if (repairedTask.userId === undefined) {
+        if ( repairedTask.userId === undefined ||
+            repairedTask.createdAt === undefined ||
+            repairedTask.updatedAt === undefined ||
+            repairedTask.completedAt === undefined
+       ) {
             needsRepair = true;
 
             repairedTask = repairTask(repairedTask);
@@ -123,8 +124,14 @@ export function updateTask(updatedTask: Task): void
 {
     const tasks = loadTasks();
 
-    const updatedTasks = tasks.map( 
-               task => task.id === updatedTask.id ? updatedTask : task
+    const updatedTasks = tasks.map((task) =>
+        task.id === updatedTask.id
+            ? {
+                ...updatedTask,
+                createdAt: task.createdAt,
+                updatedAt: new Date().toISOString(),
+            }
+            : task
     );
 
     saveTasks(updatedTasks);
