@@ -2,10 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PROFILE, getProfile, saveProfile } from "../Data/profileStorage";
 import type { ProfileData } from "../Data/profileStorage";
 import { loadTasks } from "../Data/taskStorage";
-import { useNavigate } from "react-router-dom";
-import { useAuthConnector } from "../Services/firebase/connector";
 import { useOutletContext } from "react-router-dom";
-import { logout } from "../Services/firebase/auth";
+import type { User } from "firebase/auth";
 // ── Default avatar icon shown when no photo has been set ──────────────────
 function DefaultAvatarIcon() {
   return (
@@ -282,8 +280,10 @@ function TaskPreferences() {
 }
 
 export default function ProfilePage() {
-  const { onLogin } = useOutletContext<{ onLogin: () => void }>();
-  const currentUser = useAuthConnector();
+  // ProfilePage.tsx
+  const { currentUser, onLogin, onLogout, } = useOutletContext<{
+  currentUser: User | null; onLogin: () => void;
+  onLogout: () => Promise<void>; }>();
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -325,7 +325,7 @@ export default function ProfilePage() {
     setEditing(false);
   }
 
-  // CHANGED TODAY: Logging out while editing saves the current draft first.
+  // Logging out while editing saves the current draft first.
   // This prevents Profile changes from being lost when Logout is selected.
   async function handleLogout() {
     if (editing) {
@@ -334,7 +334,7 @@ export default function ProfilePage() {
       setEditing(false);
     }
 
-    await logout();
+    await onLogout();
   }
 
   const active = editing ? draft : profile;
@@ -365,7 +365,7 @@ export default function ProfilePage() {
   
   return (
     <div>
-      {/* CHANGED TODAY: Profile header is now authentication-aware.
+      {/*  Profile header is now authentication-aware.
           Guest users only see Login.
           Authenticated users see Edit Profile and Logout.
           While editing, Logout remains available and saves the draft first. */}

@@ -23,7 +23,7 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { subscribeToAuthState } from "./auth";
+import { subscribeToAuthState, logout as firebaseLogout } from "./auth";
 import { getProfile, saveProfile } from "../../Data/profileStorage";
 
 /**
@@ -71,4 +71,10 @@ async function syncProfileUid(nextUid: string | null): Promise<void> {
     }
 
     await saveProfile({ ...profile, uid: nextUid });
+}
+
+// 2026-08-22: Application-facing logout operation.
+// UI components call this connector instead of talking to Firebase directly.
+export async function logout(): Promise<void> {
+    await firebaseLogout();
 }

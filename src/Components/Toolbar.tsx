@@ -3,11 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
-import { logout } from "../Services/firebase/auth";
 import type { User } from "firebase/auth";
-
-
-
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
   return (
@@ -76,19 +72,19 @@ function ProfileButton() {
 }
 // CHANGED: reverted — Toolbar no longer needs collapsed/onToggleSidebar props
 export default function Toolbar({
-     onLogin, currentUser,  
+     currentUser, onLogin, onLogout,  
     }: {
+   currentUser: User | null;
    onLogin: () => void;
-    currentUser: User | null;
+   onLogout: () => Promise<void>;
       })
     {
 
   const navigate = useNavigate();
-
- 
+  
 
    async function handleLogout() {
-    await logout();
+    await onLogout();
   }
 
   return (

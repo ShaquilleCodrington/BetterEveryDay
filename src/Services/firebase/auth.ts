@@ -1,4 +1,5 @@
 import {
+    createUserWithEmailAndPassword,
     onAuthStateChanged,
     signOut,
     type User,
@@ -26,6 +27,19 @@ export function subscribeToAuthState(
     callback: (user: User | null) => void
 ): Unsubscribe {
     return onAuthStateChanged(auth, callback);
+}
+
+export async function createAccount(
+    email: string,
+    password: string
+): Promise<User> {
+    const credential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+    );
+
+    return credential.user;
 }
 
 // Provides the existing auth layer with an explicit logout action.

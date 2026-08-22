@@ -33,8 +33,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
-import { subscribeToAuthState } from "./Services/firebase/auth";
-import { continueAsGuest } from "./Services/firebase/connector";
+import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/connector";
 
 import { Routes, Route, Outlet } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
@@ -63,28 +62,33 @@ function AuthGate() {
   const [authStatus, setAuthStatus] =
     useState<AuthStatus>("loading");
 
-  const [currentUser, setCurrentUser] =
-    useState<User | null>(null);
+  const currentUser: User | null = useAuthConnector();
+
 
   const [guestMode, setGuestMode] = useState(false);
    
+  // 2026-08-22: Central application logout action.
+// This delegates authentication to the connector.
+async function handleLogout(): Promise<void> {
+    await logout();
+}
   
   // AuthGate is now the single Firebase
   // authentication listener.
-   useEffect(() => {
-    return subscribeToAuthState((user) => {
-      setCurrentUser(user);
+    useEffect(() => {
+    if (currentUser) {
+      setGuestMode(false);
+      setAuthStatus("login");
+      return;
+    }
 
-      if (user) {
-        setGuestMode(false);
-        setAuthStatus("login");
-      } else {
-        setAuthStatus("login");
-      }
-    });
-  }, []);
+    // No authenticated Firebase user.
+    // Guest mode may still allow the application to render.
+    setAuthStatus("login");
+  }, [currentUser]);
 
-  // Firebase has not finished checking for an existing session.
+  // Firebase/auth connector has not finished determining
+  // the current authentication state.
   if (authStatus === "loading") {
     return <div>Loading...</div>;
   }
@@ -114,14 +118,14 @@ function AuthGate() {
   return (
 
   <MainApplication
-      
-      currentUser = {currentUser}
-      onLogin={() => 
-        {
-          setGuestMode(false);
-          setAuthStatus("login");
-        }} 
-        />
+    
+            currentUser={currentUser}
+            onLogin={() => {
+              setGuestMode(false);
+              setAuthStatus("login");
+            }}
+            onLogout={handleLogout}
+          />
       );
     }
         
@@ -132,10 +136,11 @@ function AuthGate() {
 // control whether these routes are rendered.
 function MainApplication(
   { 
-    currentUser, onLogin 
+    currentUser, onLogin, onLogout 
   }:  { 
         currentUser: User | null; 
-        onLogin: () => void 
+        onLogin: () => void;
+        onLogout: () => Promise<void>;
       
       }) {
         
@@ -144,7 +149,8 @@ function MainApplication(
        <Route element={
           <MainLayout
             currentUser={currentUser}
-            onLogin={onLogin}
+           onLogin={onLogin}
+            onLogout={onLogout}
           />
         }
       >
@@ -193,10 +199,11 @@ function MainApplication(
 // This only renders after AuthGate allows the user into
 // MainApplication.
 function MainLayout({
-  currentUser, onLogin,
+  currentUser, onLogin, onLogout
 }: {
   currentUser: User | null;
   onLogin: () => void;
+  onLogout: () => Promise<void>;
 }) {
 
    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -228,10 +235,12 @@ function MainLayout({
             minWidth: 0,
         }}>
         <Toolbar currentUser={currentUser} 
-            onLogin={onLogin} />
+            onLogin={onLogin}
+            onLogout={onLogout}
+             />
 
         <div className="page-container">
-          <Outlet  context={{ currentUser, onLogin }}/>
+          <Outlet  context={{ currentUser, onLogin, onLogout }}/>
        
         </div>
       </div>
