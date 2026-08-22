@@ -31,9 +31,10 @@
 // ======================================================
 
 import { useEffect, useState } from "react";
+import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
 import { subscribeToAuthState } from "./Services/firebase/auth";
-import { useAuthConnector, continueAsGuest } from "./Services/firebase/connector";
+import { continueAsGuest } from "./Services/firebase/connector";
 
 import { Routes, Route, Outlet } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
@@ -56,22 +57,27 @@ import HelpPage from "./pages/HelpPage";
 import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
 import "./Css/App.css";
 
-type AuthStatus = | "loading" |"login" | "guest" | "authenticated";
+type AuthStatus = | "loading" |"login" ;
 
 function AuthGate() {
   const [authStatus, setAuthStatus] =
     useState<AuthStatus>("loading");
 
-    // Keeps Profile.uid synchronized with Firebase Auth.
-  useAuthConnector();
+  const [currentUser, setCurrentUser] =
+    useState<User | null>(null);
 
+  const [guestMode, setGuestMode] = useState(false);
+   
   
-  // Determines whether the application should show
-  // authentication or the main application.
+  // AuthGate is now the single Firebase
+  // authentication listener.
    useEffect(() => {
     return subscribeToAuthState((user) => {
+      setCurrentUser(user);
+
       if (user) {
-        setAuthStatus("authenticated");
+        setGuestMode(false);
+        setAuthStatus("login");
       } else {
         setAuthStatus("login");
       }
@@ -85,20 +91,19 @@ function AuthGate() {
 
   // Firebase says there is no authenticated user.
   // The user can either authenticate or explicitly continue as a guest.
-   if (authStatus === "login") {
+   if  (!currentUser && !guestMode) {
     return (
       <LoginScreen
         onGuest={async () => {
 
-          // Explicit guest path.
-          //
-          // This does NOT create a Firebase user.
-          // It simply ensures Profile.uid remains null.
+          // ======================================================
+          // 2026-08-22: Guest entry leaves currentUser as null
+          // while allowing the user to enter the main application.
+          // ======================================================
           await continueAsGuest();
 
-          // Now BetterEveryDay knows that the user has
-          // intentionally chosen to enter as a guest.
-          setAuthStatus("guest");
+          setGuestMode(true);
+        
         }}
       />
     );
@@ -106,18 +111,44 @@ function AuthGate() {
 
    // Either Firebase authenticated the user or the user
   // explicitly chose to continue as a guest.
-  return <MainApplication onLogin={() => setAuthStatus("login")}/>;
-}
+  return (
+
+  <MainApplication
+      
+      currentUser = {currentUser}
+      onLogin={() => 
+        {
+          setGuestMode(false);
+          setAuthStatus("login");
+        }} 
+        />
+      );
+    }
+        
 
 // This contains the existing BetterEveryDay routes.
 //
 // The routes were moved out of App() so that AuthGate can
 // control whether these routes are rendered.
-function MainApplication({ onLogin }: { onLogin: () => void }) {
+function MainApplication(
+  { 
+    currentUser, onLogin 
+  }:  { 
+        currentUser: User | null; 
+        onLogin: () => void 
+      
+      }) {
+        
   return (
     <Routes>
-      <Route element={<MainLayout onLogin={onLogin} />}>
-        <Route path="/" element={<DashboardPage />}>
+       <Route element={
+          <MainLayout
+            currentUser={currentUser}
+            onLogin={onLogin}
+          />
+        }
+      >
+         <Route path="/" element={<DashboardPage />}>
           <Route
             index
             element={<div>Home coming soon.</div>}
@@ -161,8 +192,12 @@ function MainApplication({ onLogin }: { onLogin: () => void }) {
 
 // This only renders after AuthGate allows the user into
 // MainApplication.
-function MainLayout({ onLogin }: { onLogin: () => void }) {
-{
+function MainLayout({
+  currentUser, onLogin,
+}: {
+  currentUser: User | null;
+  onLogin: () => void;
+}) {
 
    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -192,10 +227,11 @@ function MainLayout({ onLogin }: { onLogin: () => void }) {
             flex: "1 1 auto",
             minWidth: 0,
         }}>
-        <Toolbar onLogin={onLogin} />
+        <Toolbar currentUser={currentUser} 
+            onLogin={onLogin} />
 
         <div className="page-container">
-          <Outlet  context={{ onLogin }}/>
+          <Outlet  context={{ currentUser, onLogin }}/>
        
         </div>
       </div>
@@ -203,7 +239,7 @@ function MainLayout({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-}
+
 function App() {
   return <AuthGate />;
 }

@@ -4,7 +4,9 @@ import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
 import { logout } from "../Services/firebase/auth";
-import { useAuthConnector } from "../Services/firebase/connector";
+import type { User } from "firebase/auth";
+
+
 
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
@@ -74,17 +76,16 @@ function ProfileButton() {
 }
 // CHANGED: reverted — Toolbar no longer needs collapsed/onToggleSidebar props
 export default function Toolbar({
-     onLogin,  
+     onLogin, currentUser,  
     }: {
    onLogin: () => void;
+    currentUser: User | null;
       })
     {
 
   const navigate = useNavigate();
 
-  const currentUser = useAuthConnector();
-
-  
+ 
 
    async function handleLogout() {
     await logout();
