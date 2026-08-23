@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
+import { createSnapshot } from "../Services/Snapshot/snapshot";
+import { sendSnapshot } from "../Services/Snapshot/syncManager";
 import type { User } from "firebase/auth";
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
@@ -82,6 +84,16 @@ export default function Toolbar({
 
   const navigate = useNavigate();
   
+  // 2026-08-23 — Manually create the latest local Snapshot and send it to Firestore.
+async function handleSave() {
+  if (!currentUser) {
+    return;
+  }
+
+  const snapshot = createSnapshot(currentUser.uid);
+
+  await sendSnapshot(snapshot);
+}
 
    async function handleLogout() {
     await onLogout();
@@ -114,24 +126,33 @@ export default function Toolbar({
       </Tooltip>
 
        {/* Logout remains persistent beside the Help control. */}
+     
       <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        {currentUser ? (
-          <button type="button" onClick={handleLogout}>
-            Logout
-          </button>
-        ) : (
-          <button type="button" onClick={onLogin}>
-            Login
-          </button>
-        )}
-      </div>
+  style={{
+    marginLeft: "auto",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  }}
+>
+  {currentUser && (
+    <Tooltip text="Save your current data to the cloud">
+      <button type="button" onClick={handleSave}>
+        Save
+      </button>
+    </Tooltip>
+  )}
+
+  {currentUser ? (
+    <button type="button" onClick={handleLogout}>
+      Logout
+    </button>
+  ) : (
+    <button type="button" onClick={onLogin}>
+      Login
+    </button>
+  )}
+</div>
 
       {/* Help stays pinned to the right edge on its own */}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
