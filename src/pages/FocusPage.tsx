@@ -1,7 +1,5 @@
 //Imports
 import { useEffect, useState } from "react";
-import { statesData } from "../statesData";
-import ActivityPage from "../pages/ActivityPage";
 import TaskCard from "../Components/TaskCard";
 import type { Task } from "../Data/tasks";
 import type { ChecklistItem } from "../Components/Checklist";
@@ -13,11 +11,9 @@ import CreateTaskPopup from "../Components/CreateTaskPopup";
 
 export default function FocusPage() {
 
-  const focusedState = statesData.focused;
+
   
   const [showCreateTaskPopup, setShowCreateTaskPopup] = useState(false);
-  const [selectedFocus, setSelectedFocus] = useState("");
-  const [selectedActivity, setSelectedActivity] = useState("");
   const [focusedTasks, setFocusedTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -67,111 +63,60 @@ function handleChecklistChange(taskId: string, items: ChecklistItem[]) {
   refreshTasks();
 }
 
-
-  let currentActivities: string[] = [];
-
-  //switch for activities
-  switch (selectedFocus) {
-    case "Momentum Builder":
-      currentActivities = focusedState.activities.momentumBuilder;
-      break;
-    case "Light Focus":
-      currentActivities = focusedState.activities.lightFocus;
-      break;
-    case "Deep Focus":
-      currentActivities = focusedState.activities.deepFocus;
-      break;
-  }
-
   //rendering
-  return (
-    <div>
-      {/* if no activity is selected show focus/activity section */}
-      {!selectedActivity && (
-        <>
-          <h1>{focusedState.name}</h1>
+  return ( <div>
+      <h1>Focus Page</h1>
 
-          <ul className="identity-list">
-            {focusedState.identity.map((statement) => (
-              <li key={statement}>{statement}</li>
-            ))}
-          </ul>
+      <p>
+        This is where we concentrate on the work in front of us
+        and execute with intention.
+      </p>
 
-          <hr />
-          {/* ======================================================
-                    Focused Tasks
-                ====================================================== */}
+      <hr />
 
-          <h2>Focused Tasks</h2>
+      <h2>Focused Tasks</h2>
 
-          <button onClick={() => setShowCreateTaskPopup(true)}>+ Create New Task</button>
-                      
-                
-                      {showCreateTaskPopup &&
-                        <CreateTaskPopup onCreate={handleCreateTask}
-                          onClose={() => setShowCreateTaskPopup(false)} />
-                      }
+      <button onClick={() => setShowCreateTaskPopup(true)}>
+        + Create New Task
+      </button>
 
-          {/*if no focused task show   */}
-          { focusedTasks.length == 0 ? (
-            <p>No Focused Task Avaliable.</p>
-          ) : (
-            //else show this
-            focusedTasks.map((task) => (
-              <TaskCard key={task.id}
-                {...task}
-                onEdit={() => setEditingTask(task)}
-                onDelete={() => handleDeleteTask(task.id)}
-                onChecklistChange={(items) => handleChecklistChange(task.id, items)}
-              />
-            ))
-          )}
-
-          {/* focus modes   */}
-          <div className="section-heading">What would you like to do?</div>
-          <div className="focus-mode-row">
-            <button onClick={() => setSelectedFocus("Momentum Builder")}>Momentum Builder</button>
-            <button onClick={() => setSelectedFocus("Light Focus")}>Light Focus</button>
-            <button onClick={() => setSelectedFocus("Deep Focus")}>Deep Focus</button>
-          </div>
-
-          {selectedFocus && (
-            <>
-              <div className="section-heading">{selectedFocus}</div>
-              {/* show all activities  */}
-              <div className="activity-list">
-                {currentActivities.map((activity) => (
-                  <button key={activity}
-                    className="activity-btn"
-                    onClick={() => setSelectedActivity(activity)}
-                  >
-                    {activity}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </>
+      {showCreateTaskPopup && (
+        <CreateTaskPopup
+          onCreate={handleCreateTask}
+          onClose={() => setShowCreateTaskPopup(false)}
+        />
       )}
 
-      {/* if an activity is selected show activity page */}
-      {selectedActivity && (
-        <ActivityPage activityName={selectedActivity} />
+      {/* Show focused tasks */}
+      {focusedTasks.length === 0 ? (
+        <p>No Focused Task Available.</p>
+      ) : (
+        focusedTasks.map((task) => (
+          <TaskCard
+            key={task.id}
+            {...task}
+            onEdit={() => setEditingTask(task)}
+            onDelete={() => handleDeleteTask(task.id)}
+            onChecklistChange={(items) =>
+              handleChecklistChange(task.id, items)
+            }
+          />
+        ))
       )}
 
-       {editingTask && (
-                <EditTaskPopup
-                    task={editingTask}
-                    onSave={(updatedTask) =>
-                    {
-                        handleEditTask(updatedTask);
-                        setEditingTask(null);
-                    }}
-                    onClose={() =>
-                        setEditingTask(null)
-                    }
-                />
-            )}
+      {editingTask && (
+        <EditTaskPopup
+          task={editingTask}
+          onSave={(updatedTask) => {
+            handleEditTask(updatedTask);
+            setEditingTask(null);
+          }}
+          onClose={() => {
+            setEditingTask(null);
+            refreshTasks();
+          }}
+        />
+      )}
     </div>
   );
 }

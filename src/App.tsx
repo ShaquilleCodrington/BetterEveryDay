@@ -154,11 +154,8 @@ function MainApplication(
           />
         }
       >
-         <Route path="/" element={<DashboardPage />}>
-          <Route
-            index
-            element={<div>Home coming soon.</div>}
-          />
+         <Route path="/" element={<CongruencePage />}>
+           
 
           <Route
             path="journeyPreview"
