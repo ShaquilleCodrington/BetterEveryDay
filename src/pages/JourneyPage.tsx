@@ -38,6 +38,7 @@ import
     loadSessions, addSession, updateSession,
 }
 from "../Features/journey/Storage/sessionStorage";
+import { useAuthConnector } from "../Services/firebase/connector";
 
 export default function JourneyPage()
 {
@@ -45,7 +46,8 @@ export default function JourneyPage()
     // ======================================================
     // STATE
     // ======================================================
-
+     
+    const currentUser = useAuthConnector();
     const smoothScroll = useSmoothScroll();
 
     const [journeys, setJourneys] =
@@ -139,8 +141,8 @@ export default function JourneyPage()
     {
         setSelectedJourneyId(journeyIdFromUrl);
     }
-
-}, []);
+    
+    }, []);
 
 
     // ======================================================
@@ -149,11 +151,13 @@ export default function JourneyPage()
 
     function handleCreateJourney()
     {
+        const userId = currentUser?.uid ?? null;
+
         const {
             journey,
             notebook,
         } =
-            createJourney();
+            createJourney(userId);
 
 
 
@@ -477,6 +481,12 @@ useEffect(() =>
     )
     {
 
+          const deletedJourney =
+        journeys.find(
+            (journey) =>
+                journey.notebookId === notebookId
+        );
+
         const updatedNotebooks =
             notebooks.filter(
                 (notebook)=>
@@ -492,40 +502,25 @@ useEffect(() =>
 
 
 
-        saveJourneys(
-            updatedJourneys
-        );
-
-
-
+        saveJourneys(updatedJourneys);
         saveNotebooks(updatedNotebooks);
+
         reloadData();
 
-        setJourneys(
-            updatedJourneys
+        setJourneys(updatedJourneys
         );
 
 
 
-        const deletedJourney =
-            journeys.find(
-                (journey)=>
-                    journey.notebookId === notebookId
-            );
-
-
-        if(
-            deletedJourney &&
-            deletedJourney.journeyId === selectedJourneyId
-        )
-        {
-            setSelectedJourneyId(null);
-
-            setSelectedPageId(null);
-        }
-
+    if(
+        deletedJourney &&
+        deletedJourney.journeyId === selectedJourneyId
+    )
+    {
+        setSelectedJourneyId(null);
+        setSelectedPageId(null);
     }
-
+}
 
 
 
@@ -539,6 +534,9 @@ useEffect(() =>
         title:string
     )
     {
+         const updatedAt =
+            new Date().toISOString();
+
 
         const updatedNotebooks =
             notebooks.map(
@@ -552,6 +550,7 @@ useEffect(() =>
                         return {
                             ...notebook,
                             title,
+                            updatedAt,
                         };
                     }
 
@@ -564,10 +563,31 @@ useEffect(() =>
         saveNotebooks(updatedNotebooks);
         reloadData();
 
-    }
+    // 2026-08-22: Propagate Notebook mutation to its owning Journey.
+    const updatedJourneys =
+        journeys.map(
+            (journey) =>
+            {
+                if(
+                    journey.notebookId !== notebookId
+                )
+                {
+                    return journey;
+                }
 
+                return {
+                    ...journey,
+                    updatedAt,
+                };
+            }
+        );
 
+    // 2026-08-22: Persist Journey mutation after its Notebook changed.
+    saveJourneys(updatedJourneys);
 
+    // 2026-08-22: Keep Journey state synchronized with the propagated Notebook mutation.
+    setJourneys(updatedJourneys);
+}
 
 
     // ======================================================

@@ -11,10 +11,11 @@
 export interface Journey
 {
     journeyId: string;
-    // Linked Notebook
+    userId: string | null;
     notebookId: string;
     // When the Journey was created
     createdAt: string;
+    updatedAt: string;
     folderId?: string;
     
 }
@@ -23,4 +24,8 @@ export interface JourneyFolder
 {
     id: string;
     title: string;
+    userId: string | null;
+    createdAt: string;
+    updatedAt: string;
+
 }

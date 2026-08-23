@@ -2,10 +2,12 @@ import type { Journey } from "../types";
 import { createNotebook } from "../../notes/utils/NotesFactory";
 
 
-export function createJourney()
+export function createJourney(userId: string | null)
 {
+     const now = new Date().toISOString();
+
     const notebook =
-        createNotebook("New Journey");
+        createNotebook("New Journey", userId);
 
 
     const journey: Journey =
@@ -13,8 +15,9 @@ export function createJourney()
         journeyId: crypto.randomUUID(),
 
         notebookId: notebook.id,
-
-        createdAt: new Date().toISOString(),
+        userId,
+        createdAt: now,
+        updatedAt: now,
     };
 
 

@@ -3,6 +3,42 @@ import type { Journey, JourneyFolder } from "../types";
 const FOLDERS_KEY = "journeyFolders";
 const STORAGE_KEY = "journeys";
 
+
+function repairJourney(
+    journey: Partial<Journey>
+): Journey
+{
+    // 2026-08-22 — Preserve an existing creation timestamp or initialize legacy Journeys.
+    const createdAt =
+        journey.createdAt ??
+        new Date().toISOString();
+
+    // 2026-08-22 — Preserve an existing update timestamp or initialize legacy Journeys from creation time.
+    const updatedAt =
+        journey.updatedAt ??
+        createdAt;
+
+    return {
+        journeyId:
+            journey.journeyId ?? crypto.randomUUID(),
+
+        notebookId:
+            journey.notebookId ?? "",
+
+        // 2026-08-22 — Repair missing Journey ownership without assigning authenticated ownership.
+        userId:
+            journey.userId ?? null,
+
+        createdAt,
+
+        updatedAt,
+
+        ...(journey.folderId !== undefined
+            ? { folderId: journey.folderId }
+            : {}),
+    };
+}
+
 // ======================================================
 // Load Journeys
 // ======================================================
@@ -17,7 +53,41 @@ export function loadJourneys(): Journey[]
 
     try
     {
-        return JSON.parse(storedJourneys);
+        const parsedJourneys = JSON.parse(storedJourneys);
+
+        if (!Array.isArray(parsedJourneys))
+        {
+            return [];
+        } 
+        let repaired = false;
+
+        const journeys =
+            parsedJourneys.map(
+                (journey) =>
+                {
+                    const repairedJourney =
+                        repairJourney(journey);
+
+                    if (
+                        journey.userId === undefined ||
+                        journey.createdAt === undefined ||
+                        journey.updatedAt === undefined ||
+                        journey.journeyId === undefined
+                    )
+                    {
+                        repaired = true;
+                    }
+
+                    return repairedJourney;
+                }
+            );
+
+        if (repaired)
+        {
+            saveJourneys(journeys);
+        }
+
+        return journeys;
     }
     catch
     {
@@ -57,6 +127,13 @@ export function updateJourney(updatedJourney: Journey): Journey[]
 {
     const existingJourneys = loadJourneys();
 
+    const journeyWithUpdatedAt: Journey =
+    {
+        ...updatedJourney,
+        updatedAt:
+            new Date().toISOString(),
+    };
+
     const updatedJourneys = existingJourneys.map((journey) =>
     {
         if (journey.journeyId !== updatedJourney.journeyId)
@@ -64,7 +141,7 @@ export function updateJourney(updatedJourney: Journey): Journey[]
             return journey;
         }
 
-        return updatedJourney;
+        return journeyWithUpdatedAt;
     });
 
     saveJourneys(updatedJourneys);
