@@ -22,17 +22,24 @@ function handleSubmit() {
    // // Authenticated Tasks use the Firebase user's UID. 
    // // ======================================================
 
-   const userId = currentUser?.uid ?? null; const newTask = { id: crypto.randomUUID(), userId,
-      title,
-      notes,
-      completed: false,
-      mood,
-      status,
-      priority,
-      dueDate,
-      updatedAt: new Date().toLocaleDateString(),
-      checklist: [],
-    };
+   const userId = currentUser?.uid ?? null; 
+   const now = new Date().toISOString();
+
+   const newTask: Task = {
+    id: crypto.randomUUID(),
+    userId,
+    title,
+    notes,
+    completed: false,
+    mood,
+    status,
+    priority,
+    dueDate,
+    createdAt: now,
+    completedAt: null,
+    updatedAt: now,
+    checklist: [],
+  };
     onCreate(newTask);
   }
 
