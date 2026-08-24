@@ -25,27 +25,48 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { subscribeToAuthState, logout as firebaseLogout } from "./auth";
 import { getProfile, saveProfile } from "../../Data/profileStorage";
+import { synchronizeOnLogin } from "../Snapshot/syncManager";
 
 /**
  * Call once near the root of the app (e.g. in App.tsx).
  * Subscribes to Firebase auth state for the lifetime of the
  * component and keeps profile.uid in sync automatically.
  */
-
 export function useAuthConnector(): User | null {
-     const [currentUser, setCurrentUser] = useState<User | null>(null); 
-     
-     useEffect(() => { const unsubscribe = subscribeToAuthState(async (user) =>
-        { setCurrentUser(user);
-        const nextUid = user ? user.uid : null;
-        await syncProfileUid(nextUid); }); 
+    const [currentUser, setCurrentUser] =
+        useState<User | null>(null);
 
-return unsubscribe; 
-}, []); 
+    useEffect(() => {
+        const unsubscribe =
+            subscribeToAuthState(async (user) => {
 
-return currentUser; 
+                setCurrentUser(user);
+
+                const nextUid =
+                    user ? user.uid : null;
+
+                await syncProfileUid(nextUid);
+
+                // 2026-08-23 — When Firebase confirms an authenticated
+                // user, restore that user's Continuity Snapshot.
+                if (user) {
+                    try {
+                        await synchronizeOnLogin(user.uid);
+                    }
+                    catch (error) {
+                        console.error(
+                            "Continuity synchronization failed:",
+                            error
+                        );
+                    }
+                }
+            });
+
+        return unsubscribe;
+    }, []);
+
+    return currentUser;
 }
-
 
 /**
  * Explicit guest path. Wire this up to the "Continue as

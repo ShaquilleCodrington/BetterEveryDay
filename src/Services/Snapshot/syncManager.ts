@@ -6,6 +6,7 @@ import {
 
 import { database } from "../firebase/config";
 import type { Snapshot } from "./snapshot";
+import {reconcileCurrentSnapshotWithCloud, restoreSnapshotToLocalStorage,} from "./snapshotManager";
 
 
 // 2026-08-23 — Store each user's current Continuity Snapshot at one predictable Firestore location.
@@ -37,7 +38,8 @@ export async function sendSnapshot(
 // 2026-08-23 — Retrieve the current cloud Snapshot for the authenticated user.
 export async function receiveSnapshot(
     userId: string
-): Promise<Snapshot | null> {
+): Promise<Snapshot | null> 
+{
     const snapshotReference =
         getSnapshotReference(userId);
 
@@ -49,4 +51,28 @@ export async function receiveSnapshot(
     }
 
     return snapshotDocument.data() as Snapshot;
+}
+
+// 2026-08-23 — Pull the authenticated user's cloud Snapshot and reconcile it into the current local Snapshot during login.
+export async function synchronizeOnLogin(
+    userId: string
+): Promise<Snapshot | null> {
+    const cloudSnapshot =
+        await receiveSnapshot(userId);
+
+    if (!cloudSnapshot) {
+        return null;
+    }
+
+    const reconciledSnapshot =
+        reconcileCurrentSnapshotWithCloud(
+            cloudSnapshot
+        );
+
+    const restoredSnapshot =
+        restoreSnapshotToLocalStorage(
+            reconciledSnapshot
+        );
+
+    return restoredSnapshot;
 }

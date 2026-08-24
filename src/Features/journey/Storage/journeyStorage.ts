@@ -166,6 +166,37 @@ export function deleteJourney(journeyId: string): Journey[]
 }
 
 // ======================================================
+// Journey Folder Repair
+// ======================================================
+function repairJourneyFolder(
+    folder: Partial<JourneyFolder>
+): JourneyFolder {
+    const createdAt =
+        folder.createdAt ??
+        new Date().toISOString();
+
+    const updatedAt =
+        folder.updatedAt ??
+        createdAt;
+
+    return {
+        id:
+            folder.id ?? crypto.randomUUID(),
+
+        title:
+            folder.title ?? "",
+
+        userId:
+            folder.userId ?? null,
+
+        createdAt,
+
+        updatedAt,
+    };
+}
+
+
+// ======================================================
 // Folder Storage
 // ======================================================
 
@@ -179,14 +210,44 @@ export function loadJourneyFolders(): JourneyFolder[]
     }
 
     try
-    {
-        return JSON.parse(stored);
+    {const parsedFolders =
+            JSON.parse(stored);
+
+        if (!Array.isArray(parsedFolders)) {
+            return [];
+        }
+
+        let repaired = false;
+
+        const folders =
+            parsedFolders.map((folder) => {
+                const repairedFolder =
+                    repairJourneyFolder(folder);
+
+                if (
+                    folder.id === undefined ||
+                    folder.userId === undefined ||
+                    folder.createdAt === undefined ||
+                    folder.updatedAt === undefined
+                ) {
+                    repaired = true;
+                }
+
+                return repairedFolder;
+            });
+
+        if (repaired) {
+            saveJourneyFolders(folders);
+        }
+
+        return folders;
     }
-    catch
-    {
+    catch {
         return [];
     }
 }
+
+
 
 export function saveJourneyFolders(
     folders: JourneyFolder[]
