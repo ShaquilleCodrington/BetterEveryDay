@@ -1,9 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PROFILE, getProfile, saveProfile } from "../Data/profileStorage";
 import type { ProfileData } from "../Data/profileStorage";
-import { loadTasks } from "../Data/taskStorage";
 import { useOutletContext } from "react-router-dom";
 import type { User } from "firebase/auth";
+
+import {
+  loadTasks,
+  saveTasks,
+} from "../Data/taskStorage";
+
+import {
+  loadNotebooks,
+  saveNotebooks,
+  loadNotebookFolders,
+  saveNotebookFolders,
+} from "../Features/notes/storage/notebookStorage";
+
+import {
+  loadJourneys,
+  saveJourneys,
+  loadJourneyFolders,
+  saveJourneyFolders,
+} from "../Features/journey/Storage/journeyStorage";
+
+import {
+  createSnapshot,
+  saveCurrentSnapshot,
+} from "../Services/Snapshot/snapshot";
+
+import {
+  sendSnapshot,
+} from "../Services/Snapshot/syncManager";
+
 // ── Default avatar icon shown when no photo has been set ──────────────────
 function DefaultAvatarIcon() {
   return (
@@ -325,6 +353,112 @@ export default function ProfilePage() {
     setEditing(false);
   }
 
+  async function handleMigrateGuestData() {
+  if (!currentUser) {
+    return;
+  }
+
+  const userId = currentUser.uid;
+
+  try {
+    // ======================================================
+    // 2026-08-23 — Migrate legacy guest-owned data to the
+    // authenticated user's Firebase UID.
+    //
+    // Pages and blocks are intentionally excluded for now.
+    // ======================================================
+
+    const tasks = loadTasks();
+
+    const migratedTasks = tasks.map((task) =>
+      task.userId === null
+        ? {
+            ...task,
+            userId,
+          }
+        : task
+    );
+
+    saveTasks(migratedTasks);
+
+    const notebooks = loadNotebooks();
+
+    const migratedNotebooks = notebooks.map((notebook) =>
+      notebook.userId === null
+        ? {
+            ...notebook,
+            userId,
+          }
+        : notebook
+    );
+
+    saveNotebooks(migratedNotebooks);
+
+    const notebookFolders = loadNotebookFolders();
+
+    const migratedNotebookFolders =
+      notebookFolders.map((folder) =>
+        folder.userId === null
+          ? {
+              ...folder,
+              userId,
+            }
+          : folder
+      );
+
+    saveNotebookFolders(migratedNotebookFolders);
+
+    const journeys = loadJourneys();
+
+    const migratedJourneys = journeys.map((journey) =>
+      journey.userId === null
+        ? {
+            ...journey,
+            userId,
+          }
+        : journey
+    );
+
+    saveJourneys(migratedJourneys);
+
+    const journeyFolders = loadJourneyFolders();
+
+    const migratedJourneyFolders =
+      journeyFolders.map((folder) =>
+        folder.userId === null
+          ? {
+              ...folder,
+              userId,
+            }
+          : folder
+      );
+
+    saveJourneyFolders(migratedJourneyFolders);
+
+    // ======================================================
+    // Rebuild the authenticated user's Snapshot from the
+    // newly migrated local data.
+    // ======================================================
+
+    const snapshot = createSnapshot(userId);
+
+    saveCurrentSnapshot(snapshot);
+
+    await sendSnapshot(snapshot);
+
+    console.log(
+      "Legacy guest data successfully migrated:",
+      snapshot
+    );
+  }
+  catch (error) {
+    console.error(
+      "Failed to migrate legacy guest data:",
+      error
+    );
+  }
+}
+
   // Logging out while editing saves the current draft first.
   // This prevents Profile changes from being lost when Logout is selected.
   async function handleLogout() {
@@ -409,25 +543,32 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div
-            style={{
-              display: "flex",
-              gap: "8px",
-            }}
+          style={{
+            display: "flex",
+            gap: "8px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={startEditing}
           >
-            <button
-              type="button"
-              onClick={startEditing}
-            >
-              ✎ Edit Profile
-            </button>
+            ✎ Edit Profile
+          </button>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleMigrateGuestData}
+          >
+            Save Guest Data
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
         )}
       </div>
 
