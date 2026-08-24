@@ -15,6 +15,10 @@ import {
     saveNotebooks,
     loadNotebookFolders,
     saveNotebookFolders,
+    loadPages,
+    savePages,
+    loadBlocks,
+    saveBlocks,
 } from "../../Features/notes/storage/notebookStorage";
 
 import {
@@ -27,7 +31,8 @@ import {
 
 
 // 2026-08-23 — Update and submit the current Snapshot whenever a Manager trigger occurs.
-function processCurrentSnapshot(): Snapshot | null {
+function processCurrentSnapshot(): Snapshot | null 
+{
     const currentSnapshot = loadCurrentSnapshot();
 
     if (!currentSnapshot) {
@@ -59,10 +64,12 @@ export function applicationClosing(): Snapshot | null {
 function reconcileCollection<T extends { id: string }>(
     localItems: T[],
     cloudItems: T[]
-): T[] {
+): T[] 
+{
     const mergedItems = [...localItems];
 
-    for (const cloudItem of cloudItems) {
+    for (const cloudItem of cloudItems) 
+        {
         const existsLocally = mergedItems.some(
             localItem => localItem.id === cloudItem.id
         );
@@ -124,6 +131,19 @@ export function reconcileCurrentSnapshotWithCloud(
             cloudSnapshot.tasks
         ),
 
+         pages:
+            reconcileCollection(
+                localSnapshot.pages,
+                cloudSnapshot.pages
+            ),
+
+
+        blocks:
+            reconcileCollection(
+                localSnapshot.blocks,
+                cloudSnapshot.blocks
+            ),
+
         notebooks: reconcileCollection(
             localSnapshot.notebooks,
             cloudSnapshot.notebooks
@@ -155,7 +175,8 @@ export function reconcileCurrentSnapshotWithCloud(
 // 2026-08-23 — Restore every object contained in a Snapshot into its corresponding local storage collection.
 export function restoreSnapshotToLocalStorage(
     snapshot: Snapshot
-): Snapshot {
+): Snapshot 
+{
     const currentTasks =
         loadTasks();
 
@@ -164,6 +185,12 @@ export function restoreSnapshotToLocalStorage(
 
     const currentNotebookFolders =
         loadNotebookFolders();
+
+    const currentPages =
+        loadPages();
+
+    const currentBlocks =
+        loadBlocks();
 
     const currentJourneys =
         loadJourneys();
@@ -190,6 +217,18 @@ export function restoreSnapshotToLocalStorage(
             snapshot.notebookFolders
         );
 
+    const restoredPages =
+        reconcileCollection(
+            currentPages,
+            snapshot.pages
+        );
+
+    const restoredBlocks =
+        reconcileCollection(
+            currentBlocks,
+            snapshot.blocks
+        );
+
     const restoredJourneys =
         reconcileJourneyCollection(
             currentJourneys,
@@ -203,15 +242,29 @@ export function restoreSnapshotToLocalStorage(
         );
 
 
-    saveTasks(restoredTasks);
-
-    saveNotebooks(restoredNotebooks);
+    saveTasks(
+        restoredTasks
+    );
 
     saveNotebookFolders(
         restoredNotebookFolders
     );
 
-    saveJourneys(restoredJourneys);
+    saveNotebooks(
+        restoredNotebooks
+    );
+
+    savePages(
+        restoredPages
+    );
+
+    saveBlocks(
+        restoredBlocks
+    );
+
+    saveJourneys(
+        restoredJourneys
+    );
 
     saveJourneyFolders(
         restoredJourneyFolders
@@ -221,12 +274,20 @@ export function restoreSnapshotToLocalStorage(
     const restoredSnapshot: Snapshot = {
         ...snapshot,
 
-        tasks: restoredTasks,
+        tasks:
+            restoredTasks,
 
-        notebooks: restoredNotebooks,
+        notebooks:
+            restoredNotebooks,
 
         notebookFolders:
             restoredNotebookFolders,
+
+        pages:
+            restoredPages,
+
+        blocks:
+            restoredBlocks,
 
         journeys:
             restoredJourneys,
@@ -245,7 +306,6 @@ export function restoreSnapshotToLocalStorage(
 
     return restoredSnapshot;
 }
-
 
 // 2026-08-23 — Reserve the scheduling entry point for future Snapshot Manager rules.
 export function futureSyncRule(): void {

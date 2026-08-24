@@ -1,8 +1,11 @@
 import type  { Task }  from "../../Data/tasks";
 import { loadTasks } from "../../Data/taskStorage";
-import type { Notebook, NotebookFolder, } from "../../Features/notes/types";
+import type { Notebook, NotebookFolder, 
+        Page, Block,
+ } from "../../Features/notes/types";
 import {
     loadNotebooks,loadNotebookFolders,
+    loadPages,loadBlocks,
  } from "../../Features/notes/storage/notebookStorage";
 
 import type {
@@ -21,7 +24,11 @@ export interface Snapshot {
     userId: string;
 
     tasks: Task[];
-    
+
+    pages: Page[];
+    blocks: Block[];
+
+
     notebooks: Notebook[];
     notebookFolders: NotebookFolder[];
 
@@ -32,54 +39,147 @@ export interface Snapshot {
     updatedAt: string;
 }
 
-export function createSnapshot(userId: string): Snapshot {
-    const tasks = loadTasks().filter(
-        task => task.userId === userId
-    );
+export function createSnapshot(
+    userId: string
+): Snapshot
+{
+    const allTasks =
+        loadTasks();
 
-    const notebooks = loadNotebooks().filter(
-        notebook => notebook.userId === userId
-    );
+    const allNotebooks =
+        loadNotebooks();
 
-    const notebookFolders = loadNotebookFolders().filter(
-        folder => folder.userId === userId
-    );
+    const allNotebookFolders =
+        loadNotebookFolders();
 
-    const journeys = loadJourneys().filter(
-        journey => journey.userId === userId
-    );
+    const allPages =
+        loadPages();
 
-    const journeyFolders = loadJourneyFolders().filter(
-        folder => folder.userId === userId
-    );
+    const allBlocks =
+        loadBlocks();
 
-    const now = new Date().toISOString();
+    const allJourneys =
+        loadJourneys();
+
+    const allJourneyFolders =
+        loadJourneyFolders();
+
+
+    const tasks =
+        allTasks.filter(
+            (task) =>
+                task.userId === userId
+        );
+
+
+    const notebooks =
+        allNotebooks.filter(
+            (notebook) =>
+                notebook.userId === userId
+        );
+
+
+    const notebookFolders =
+        allNotebookFolders.filter(
+            (folder) =>
+                folder.userId === userId
+        );
+
+
+    
+    const ownedNotebookIds =
+        new Set(
+            notebooks.map(
+                (notebook) =>
+                    notebook.id
+            )
+        );
+
+
+    const pages =
+        allPages.filter(
+            (page) =>
+                ownedNotebookIds.has(
+                    page.notebookId
+                )
+        );
+
+
+    
+    const ownedPageIds =
+        new Set(
+            pages.map(
+                (page) =>
+                    page.id
+            )
+        );
+
+
+    const blocks =
+        allBlocks.filter(
+            (block) =>
+                ownedPageIds.has(
+                    block.pageId
+                )
+        );
+
+
+    const journeys =
+        allJourneys.filter(
+            (journey) =>
+                journey.userId === userId
+        );
+
+
+    const journeyFolders =
+        allJourneyFolders.filter(
+            (folder) =>
+                folder.userId === userId
+        );
+
+
+    const now =
+        new Date().toISOString();
+
 
     return {
         userId,
+
         tasks,
 
-        notebooks,
         notebookFolders,
+        notebooks,
+        pages,
+        blocks,
 
-        journeys,
         journeyFolders,
+        journeys,
 
         createdAt: now,
         updatedAt: now,
     };
 }
 
+
 // 2026-08-23 — Load the latest winning Snapshot used as the local comparison baseline.
 export function loadCurrentSnapshot(): Snapshot | null {
+    
     const storedSnapshot =
         localStorage.getItem(CURRENT_SNAPSHOT_KEY);
 
     if (!storedSnapshot) {
         return null;
     }
-
-    return JSON.parse(storedSnapshot);
+ try
+    {
+        return JSON.parse(
+            storedSnapshot
+        ) as Snapshot;
+    }
+    catch
+    {
+        return null;
+    }
 }
 
 // 2026-08-23 — Persist the Snapshot that most recently won comparison.
@@ -101,7 +201,8 @@ export function updateTaskSnapshot(
 
     const changed =
         currentTasks.length !== snapshot.tasks.length ||
-        currentTasks.some(currentTask => {
+        currentTasks.some(currentTask => 
+            {
             const snapshotTask = snapshot.tasks.find(
                 task => task.id === currentTask.id
             );
@@ -122,6 +223,143 @@ export function updateTaskSnapshot(
         updatedAt: new Date().toISOString(),
     };
 }
+// 2026-08-24 — Compare locally stored Pages belonging to user-owned Notebooks.
+export function updatePageSnapshot(
+    snapshot: Snapshot
+): Snapshot
+{
+    const allNotebooks =
+        loadNotebooks();
+
+    const ownedNotebookIds =
+        new Set(
+            allNotebooks
+                .filter(
+                    (notebook) =>
+                        notebook.userId ===
+                        snapshot.userId
+                )
+                .map(
+                    (notebook) =>
+                        notebook.id
+                )
+        );
+
+
+    const currentPages =
+        loadPages().filter(
+            (page) =>
+                ownedNotebookIds.has(
+                    page.notebookId
+                )
+        );
+
+
+    const changed =
+        currentPages.length !==
+            snapshot.pages.length ||
+        currentPages.some(
+            (currentPage) =>
+            {
+                const snapshotPage =
+                    snapshot.pages.find(
+                        (page) =>
+                            page.id ===
+                            currentPage.id
+                    );
+
+
+                return (
+                    !snapshotPage ||
+                    currentPage.updatedAt !==
+                        snapshotPage.updatedAt
+                );
+            }
+        );
+
+
+    if (!changed)
+    {
+        return snapshot;
+    }
+
+
+    return {
+        ...snapshot,
+
+        pages:
+            currentPages,
+
+        updatedAt:
+            new Date().toISOString(),
+    };
+}
+
+
+// 2026-08-24 — Compare locally stored Blocks belonging to user-owned Pages.
+export function updateBlockSnapshot(
+    snapshot: Snapshot
+): Snapshot
+{
+    const ownedPageIds =
+        new Set(
+            snapshot.pages.map(
+                (page) =>
+                    page.id
+            )
+        );
+
+
+    const currentBlocks =
+        loadBlocks().filter(
+            (block) =>
+                ownedPageIds.has(
+                    block.pageId
+                )
+        );
+
+
+    const changed =
+        currentBlocks.length !==
+            snapshot.blocks.length ||
+        currentBlocks.some(
+            (currentBlock) =>
+            {
+                const snapshotBlock =
+                    snapshot.blocks.find(
+                        (block) =>
+                            block.id ===
+                            currentBlock.id
+                    );
+
+
+                return (
+                    !snapshotBlock ||
+                    currentBlock.updatedAt !==
+                        snapshotBlock.updatedAt
+                );
+            }
+        );
+
+
+    if (!changed)
+    {
+        return snapshot;
+    }
+
+
+    return {
+        ...snapshot,
+
+        blocks:
+            currentBlocks,
+
+        updatedAt:
+            new Date().toISOString(),
+    };
+}
+
+
 
 export function updateNotebookSnapshot(
     snapshot: Snapshot
@@ -263,15 +501,27 @@ export function updateCurrentSnapshot(
 ): Snapshot {
     let updatedSnapshot = snapshot;
 
+    // Independent user-owned collection.
     updatedSnapshot =
         updateTaskSnapshot(updatedSnapshot);
 
+    // Parent collection.
     updatedSnapshot =
         updateNotebookSnapshot(updatedSnapshot);
 
+    // Independent user-owned collection.
     updatedSnapshot =
         updateNotebookFolderSnapshot(updatedSnapshot);
 
+    // Pages depend on the current Notebook collection.
+    updatedSnapshot =
+        updatePageSnapshot(updatedSnapshot);
+
+    // Blocks depend on the current Page collection.
+    updatedSnapshot =
+        updateBlockSnapshot(updatedSnapshot);
+
+    // Journey hierarchy.
     updatedSnapshot =
         updateJourneySnapshot(updatedSnapshot);
 
