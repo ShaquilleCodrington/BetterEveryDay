@@ -28,10 +28,11 @@ import {
     saveJourneyFolders,
 } from "../../Features/journey/Storage/journeyStorage";
 
+import { sendSnapshot } from "../Snapshot/syncManager";
 
 
-// 2026-08-23 — Update and submit the current Snapshot whenever a Manager trigger occurs.
-function processCurrentSnapshot(): Snapshot | null 
+// 2026-08-25 — Rebuild the current Snapshot from the latest local state, save it locally, and hand it to the Sync Manager.
+async function processCurrentSnapshot(): Promise<Snapshot | null>
 {
     const currentSnapshot = loadCurrentSnapshot();
 
@@ -41,24 +42,26 @@ function processCurrentSnapshot(): Snapshot | null
 
     const updatedSnapshot =
         updateCurrentSnapshot(currentSnapshot);
+        
+    updatedSnapshot.updatedAt = new Date().toISOString();
 
     saveCurrentSnapshot(updatedSnapshot);
 
-   // signalSyncManager(updatedSnapshot);
+    await signalSyncManager(updatedSnapshot);
 
     return updatedSnapshot;
 }
 
 
 // 2026-08-23 — Explicitly capture the latest local state and signal the Sync Manager.
-export function explicitSave(): Snapshot | null {
-    return processCurrentSnapshot();
+export async function explicitSave(): Promise<Snapshot | null> {
+    return await processCurrentSnapshot();
 }
 
 
 // 2026-08-23 — Capture the latest local state when the application is closing and signal the Sync Manager.
-export function applicationClosing(): Snapshot | null {
-    return processCurrentSnapshot();
+export async function applicationClosing(): Promise<Snapshot | null> {
+    return await processCurrentSnapshot();
 }
 
 function reconcileCollection<T extends { id: string }>(
@@ -102,9 +105,7 @@ function reconcileJourneyCollection(
     return mergedJourneys;
 }
 
-// 2026-08-23 — Reconcile the current local Snapshot with the authenticated user's cloud Snapshot.
-// Cloud objects missing locally are added to the new current Snapshot.
-// A new current Snapshot is always materialized and receives a fresh updatedAt.
+// 2026-08-25 — Reconcile cloud data into the local Snapshot, including Pages and Blocks, and materialize a fresh Snapshot timestamp.
 export function reconcileCurrentSnapshotWithCloud(
     cloudSnapshot: Snapshot
 ): Snapshot {
@@ -172,10 +173,10 @@ export function reconcileCurrentSnapshotWithCloud(
     return currentSnapshot;
 }
 
-// 2026-08-23 — Restore every object contained in a Snapshot into its corresponding local storage collection.
+// 2026-08-25 — Restore Tasks, Notebooks, Folders, Pages, Blocks, and Journeys from a Snapshot into their local storage collections.
 export function restoreSnapshotToLocalStorage(
     snapshot: Snapshot
-): Snapshot 
+): Snapshot
 {
     const currentTasks =
         loadTasks();
@@ -186,12 +187,6 @@ export function restoreSnapshotToLocalStorage(
     const currentNotebookFolders =
         loadNotebookFolders();
 
-    const currentPages =
-        loadPages();
-
-    const currentBlocks =
-        loadBlocks();
-
     const currentJourneys =
         loadJourneys();
 
@@ -199,16 +194,18 @@ export function restoreSnapshotToLocalStorage(
         loadJourneyFolders();
 
 
+    const currentPages =
+        loadPages();
+
+    const currentBlocks =
+        loadBlocks();
+
+   
+
     const restoredTasks =
         reconcileCollection(
             currentTasks,
             snapshot.tasks
-        );
-
-    const restoredNotebooks =
-        reconcileCollection(
-            currentNotebooks,
-            snapshot.notebooks
         );
 
     const restoredNotebookFolders =
@@ -217,6 +214,24 @@ export function restoreSnapshotToLocalStorage(
             snapshot.notebookFolders
         );
 
+    const restoredNotebooks =
+        reconcileCollection(
+            currentNotebooks,
+            snapshot.notebooks
+        );
+
+    const restoredJourneyFolders =
+        reconcileCollection(
+            currentJourneyFolders,
+            snapshot.journeyFolders
+        );
+
+    const restoredJourneys =
+        reconcileJourneyCollection(
+            currentJourneys,
+            snapshot.journeys
+        );
+    
     const restoredPages =
         reconcileCollection(
             currentPages,
@@ -229,18 +244,7 @@ export function restoreSnapshotToLocalStorage(
             snapshot.blocks
         );
 
-    const restoredJourneys =
-        reconcileJourneyCollection(
-            currentJourneys,
-            snapshot.journeys
-        );
-
-    const restoredJourneyFolders =
-        reconcileCollection(
-            currentJourneyFolders,
-            snapshot.journeyFolders
-        );
-
+    
 
     saveTasks(
         restoredTasks
@@ -313,9 +317,9 @@ export function futureSyncRule(): void {
 }
 
 
-// // 2026-08-23 — Signal the Sync Manager that a current Snapshot is ready to be considered for synchronization.
-// function signalSyncManager(
-//     snapshot: Snapshot
-// ): void {
-//     // Sync Manager will be connected here.
-// }
+// 2026-08-25 — Forward a freshly materialized Snapshot to the Sync Manager so Firebase synchronization remains centralized.
+async function signalSyncManager(
+    snapshot: Snapshot
+): Promise<void> {
+    await sendSnapshot(snapshot);
+}
