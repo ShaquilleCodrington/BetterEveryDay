@@ -92,7 +92,7 @@ export async function sync(
 
     // 1. Capture local state.
     const localSnapshot =
-        processCurrentSnapshot();
+        await processCurrentSnapshot();
 
     // 2. Always pull cloud state.
     const cloudSnapshot =
@@ -108,7 +108,7 @@ export async function sync(
     if (localSnapshot === null && cloudSnapshot !== null) {
         saveCurrentSnapshot(cloudSnapshot);
 
-        restoreSnapshotToLocalStorage(
+        await restoreSnapshotToLocalStorage(
             cloudSnapshot
         );
 
@@ -120,7 +120,7 @@ export async function sync(
     if (localSnapshot !== null && cloudSnapshot === null) {
         saveCurrentSnapshot(localSnapshot);
 
-        restoreSnapshotToLocalStorage(
+        await restoreSnapshotToLocalStorage(
             localSnapshot
         );
 
@@ -153,7 +153,7 @@ export async function sync(
 
     // 9. Materialize resolved state into application storage.
     const restoredSnapshot =
-        restoreSnapshotToLocalStorage(
+        await restoreSnapshotToLocalStorage(
             resolvedSnapshot
         );
 

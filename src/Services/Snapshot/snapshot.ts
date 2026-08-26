@@ -15,6 +15,8 @@ import type {
 import {
     loadJourneys, loadJourneyFolders,
 } from "../../Features/journey/Storage/journeyStorage";
+import type { ProfileData } from "../../Data/profileStorage";
+import { getProfile } from "../../Data/profileStorage";
 
 
 // 2026-08-23 — Define the local storage key for the latest winning Snapshot.
@@ -22,6 +24,9 @@ const CURRENT_SNAPSHOT_KEY = "currentSnapshot";
 
 export interface Snapshot {
     userId: string;
+
+    profile: ProfileData;
+    profileUpdatedAt: string;
 
     tasks: Task[];
 
@@ -39,10 +44,13 @@ export interface Snapshot {
     updatedAt: string;
 }
 
-export function createSnapshot(
+export async function createSnapshot(
     userId: string
-): Snapshot
+): Promise<Snapshot>
 {
+
+    const profile = await getProfile();
+
     const allTasks =
         loadTasks();
 
@@ -144,7 +152,8 @@ export function createSnapshot(
 
     return {
         userId,
-
+        profile,
+        profileUpdatedAt: now,
         tasks,
 
         notebookFolders,
@@ -192,6 +201,43 @@ export function saveCurrentSnapshot(
     );
 }
 
+export async function updateProfileSnapshot(
+    snapshot: Snapshot
+): Promise<Snapshot> {
+    const currentProfile = await getProfile();
+
+    const changed =
+        currentProfile.uid !== snapshot.profile.uid ||
+        currentProfile.name !== snapshot.profile.name ||
+        currentProfile.primaryTitle !== snapshot.profile.primaryTitle ||
+        currentProfile.bio !== snapshot.profile.bio ||
+        currentProfile.photo !== snapshot.profile.photo ||
+        currentProfile.titles.length !== snapshot.profile.titles.length ||
+        currentProfile.titles.some(
+            (title, index) =>
+                title !== snapshot.profile.titles[index]
+        );
+
+    if (!changed) {
+        return snapshot;
+    }
+
+    const now =
+        new Date().toISOString();
+
+    return {
+        ...snapshot,
+
+        profile:
+            currentProfile,
+
+        profileUpdatedAt:
+            now,
+
+        updatedAt:
+            now,
+    };
+}
 export function updateTaskSnapshot(
     snapshot: Snapshot
 ): Snapshot {
@@ -496,11 +542,13 @@ export function updateJourneyFolderSnapshot(
 }
 
 // 2026-08-23 — Compare all local objects against the current Snapshot and produce the newest Snapshot state.
-export function updateCurrentSnapshot(
+export async function updateCurrentSnapshot(
     snapshot: Snapshot
-): Snapshot {
+): Promise<Snapshot> {
     let updatedSnapshot = snapshot;
 
+     updatedSnapshot =
+        await updateProfileSnapshot(updatedSnapshot);
     // Independent user-owned collection.
     updatedSnapshot =
         updateTaskSnapshot(updatedSnapshot);

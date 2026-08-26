@@ -603,7 +603,7 @@ export function useNotesPageFunctions({
     // Block Actions
     // ==================================================
 
-    function handleUpdateBlock(
+    async function handleUpdateBlock(
         blockId: string,
         content: any
     )
@@ -704,8 +704,7 @@ export function useNotesPageFunctions({
         saveNotebooks(updatedNotebooks);
 
         // Snapshot
-        const currentSnapshot =
-            loadCurrentSnapshot();
+        const currentSnapshot = loadCurrentSnapshot();
         const userId = currentUser?.uid;
 
         if (!userId) {
@@ -713,7 +712,7 @@ export function useNotesPageFunctions({
         }
         const snapshot =
             currentSnapshot ??
-            createSnapshot(userId!);
+            await createSnapshot(userId!);
 
         const updatedSnapshot =
             updateBlockSnapshot(snapshot);

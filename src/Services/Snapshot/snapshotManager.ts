@@ -3,13 +3,16 @@ import {
     updateCurrentSnapshot,
     saveCurrentSnapshot,
     type Snapshot,
+    createSnapshot,
 } from "./snapshot";
 
 import {
     loadTasks,
     saveTasks,
 } from "../../Data/taskStorage";
-
+import {
+    saveProfile,
+} from "../../Data/profileStorage";
 import {
     loadNotebooks,
     saveNotebooks,
@@ -31,16 +34,28 @@ import {
 
 
 // 2026-08-25 — Rebuild the current Snapshot from the latest local state, save it locally, and hand it to the Sync Manager.
-export function processCurrentSnapshot(): Snapshot | null
+export async function processCurrentSnapshot(userId?: string): Promise<Snapshot | null>
 {
     const currentSnapshot = loadCurrentSnapshot();
 
-    if (!currentSnapshot) {
-        return null;
-    }
+    if (!currentSnapshot) 
+        {if (!userId) {
+            return null;
+        }
 
+
+        const newSnapshot =
+            await createSnapshot(userId);
+
+        saveCurrentSnapshot(
+            newSnapshot
+        );
+
+        return newSnapshot;
+    }
+    
     const updatedSnapshot =
-        updateCurrentSnapshot(currentSnapshot);
+        await updateCurrentSnapshot(currentSnapshot);
         
     updatedSnapshot.updatedAt = new Date().toISOString();
 
@@ -52,16 +67,16 @@ export function processCurrentSnapshot(): Snapshot | null
 
 
 // 2026-08-23 — Explicitly capture the latest local state and signal the Sync Manager.
-export  function explicitSave(): Snapshot | null
+export async function explicitSave(userId: string): Promise<Snapshot | null>
  {
-    return  processCurrentSnapshot();
+    return  processCurrentSnapshot(userId);
 }
 
 
 // 2026-08-23 — Capture the latest local state when the application is closing and signal the Sync Manager.
-export function applicationClosing():Snapshot | null
+export async function applicationClosing(userId: string):Promise<Snapshot | null>
  {
-    return processCurrentSnapshot();
+    return processCurrentSnapshot(userId);
 }
 function reconcileCollection<T extends { id: string; updatedAt: string }>(
     localItems: T[],
@@ -173,11 +188,31 @@ export function reconcileSnapshots(
     cloudSnapshot: Snapshot
 ): Snapshot
 {
+    const resolvedProfile =
+    localSnapshot.profileUpdatedAt >=
+    cloudSnapshot.profileUpdatedAt
+        ? localSnapshot.profile
+        : cloudSnapshot.profile;
+
+const resolvedProfileUpdatedAt =
+    localSnapshot.profileUpdatedAt >=
+    cloudSnapshot.profileUpdatedAt
+        ? localSnapshot.profileUpdatedAt
+        : cloudSnapshot.profileUpdatedAt;
+
     const resolvedSnapshot: Snapshot = {
         ...localSnapshot,
 
+    
+
         userId:
             localSnapshot.userId,
+
+         profile:
+        resolvedProfile,
+
+    profileUpdatedAt:
+        resolvedProfileUpdatedAt,
 
         tasks:
             reconcileCollection(
@@ -225,6 +260,7 @@ export function reconcileSnapshots(
             new Date().toISOString(),
     };
 
+    
     return resolvedSnapshot;
 }
 
@@ -232,9 +268,9 @@ export function reconcileSnapshots(
 // application's local storage collections.
 //
 // This function performs local storage work only.
-export function restoreSnapshotToLocalStorage(
+export async function restoreSnapshotToLocalStorage(
     snapshot: Snapshot
-): Snapshot
+): Promise<Snapshot>
 {
     const currentTasks =
         loadTasks();
@@ -301,6 +337,9 @@ export function restoreSnapshotToLocalStorage(
         );
 
 
+    await saveProfile(snapshot.profile
+    );
+
     saveTasks(
         restoredTasks
     );
@@ -329,12 +368,17 @@ export function restoreSnapshotToLocalStorage(
         restoredJourneyFolders
     );
 
-
+    
     const restoredSnapshot: Snapshot = {
         ...snapshot,
 
         tasks:
             restoredTasks,
+
+          profile: snapshot.profile,
+
+        profileUpdatedAt:
+             snapshot.profileUpdatedAt,
 
         notebooks:
             restoredNotebooks,
@@ -371,10 +415,10 @@ export function restoreSnapshotToLocalStorage(
 //
 // The Sync Manager is responsible for retrieving the cloud
 // Snapshot and pushing the returned resolved Snapshot.
-export function reconcileAndRestoreSnapshot(
+export async function reconcileAndRestoreSnapshot(
     localSnapshot: Snapshot,
     cloudSnapshot: Snapshot
-): Snapshot
+): Promise<Snapshot>
 {
     const resolvedSnapshot =
         reconcileSnapshots(
@@ -387,7 +431,7 @@ export function reconcileAndRestoreSnapshot(
     );
 
     const restoredSnapshot =
-        restoreSnapshotToLocalStorage(
+        await restoreSnapshotToLocalStorage(
             resolvedSnapshot
         );
 
