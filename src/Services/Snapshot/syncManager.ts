@@ -92,7 +92,7 @@ export async function sync(
 
     // 1. Capture local state.
     const localSnapshot =
-        await processCurrentSnapshot();
+        await processCurrentSnapshot(userId);
 
     // 2. Always pull cloud state.
     const cloudSnapshot =

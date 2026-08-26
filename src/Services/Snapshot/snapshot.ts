@@ -206,6 +206,28 @@ export async function updateProfileSnapshot(
 ): Promise<Snapshot> {
     const currentProfile = await getProfile();
 
+
+    if (!currentProfile) {
+        return snapshot;
+    }
+     const snapshotProfile = snapshot.profile;
+
+    if (!snapshotProfile) {
+        const now = new Date().toISOString();
+
+        return {
+            ...snapshot,
+
+            profile:
+                currentProfile,
+
+            profileUpdatedAt:
+                now,
+
+            updatedAt:
+                now,
+        };
+    }
     const changed =
         currentProfile.uid !== snapshot.profile.uid ||
         currentProfile.name !== snapshot.profile.name ||
