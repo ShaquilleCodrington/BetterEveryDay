@@ -71,81 +71,97 @@ export async function sendSnapshot(
     );
 }
 
-
 // Main synchronization orchestration.
 //
 // Local working state is captured first.
 // Cloud state is retrieved second.
-// Snapshot Manager determines the winner.
-// The resolved state is written locally.
-// The resolved state is then pushed to Firebase.
+//
+// There are four possible states:
+//
+//   1. No local + no cloud  → nothing to sync
+//   2. No local + cloud     → restore cloud to local
+//   3. Local + no cloud     → establish cloud from local
+//   4. Local + cloud        → reconcile both
+//
+// The resolved Snapshot is then written locally,
+// materialized into application storage, and pushed
+// back to Firebase.
 export async function sync(
     userId: string
 ): Promise<Snapshot | null> {
 
-    // 1. Capture the latest local working state.
+    // 1. Capture local state.
     const localSnapshot =
         processCurrentSnapshot();
 
-    if (!localSnapshot) {
+    // 2. Always pull cloud state.
+    const cloudSnapshot =
+        await receiveSnapshot(userId);
+
+    // 3. Nothing exists anywhere.
+    if (localSnapshot === null && cloudSnapshot === null) {
         return null;
     }
 
+    // 4. No local state, but cloud state exists.
+    //    New browser/device.
+    if (localSnapshot === null && cloudSnapshot !== null) {
+        saveCurrentSnapshot(cloudSnapshot);
 
-    // 2. Retrieve the current shared cloud state.
-    const cloudSnapshot =
-        await receiveSnapshot(
-            userId
+        restoreSnapshotToLocalStorage(
+            cloudSnapshot
         );
 
+        return cloudSnapshot;
+    }
 
-    // 3. No cloud state exists yet.
-    //
-    // Local state becomes the initial
-    // authoritative shared state.
-    if (!cloudSnapshot) {
+    // 5. Local state exists, but cloud state does not.
+    //    Establish the cloud snapshot from local state.
+    if (localSnapshot !== null && cloudSnapshot === null) {
+        saveCurrentSnapshot(localSnapshot);
 
-        saveCurrentSnapshot(
+        restoreSnapshotToLocalStorage(
             localSnapshot
         );
 
-        await sendSnapshot(
-            localSnapshot
-        );
+        await sendSnapshot(localSnapshot);
 
         return localSnapshot;
     }
 
+    // 6. At this point BOTH snapshots exist.
+    //
+    // TypeScript still may not preserve the relationship
+    // between the two independent checks above, so explicitly
+    // narrow them before reconciliation.
 
-    // 4. Compare local and cloud state.
+    if (localSnapshot === null || cloudSnapshot === null) {
+        return null;
+    }
+
+    // 7. Reconcile local and cloud.
     const resolvedSnapshot =
         reconcileSnapshots(
             localSnapshot,
             cloudSnapshot
         );
 
-
-    // 5. Save the winning Snapshot locally.
+    // 8. Save resolved snapshot locally.
     saveCurrentSnapshot(
         resolvedSnapshot
     );
 
-
-    // 6. Materialize the winning Snapshot
-    // into the application's local storage.
+    // 9. Materialize resolved state into application storage.
     const restoredSnapshot =
         restoreSnapshotToLocalStorage(
             resolvedSnapshot
         );
 
-
-    // 7. The resolved state is now the state
-    // that should exist everywhere.
+    // 10. Push the same resolved state to Firebase.
     await sendSnapshot(
         restoredSnapshot
     );
 
-
-    // 8. Return the final synchronized state.
+    // 11. Return final state.
     return restoredSnapshot;
 }
