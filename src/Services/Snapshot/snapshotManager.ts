@@ -28,11 +28,10 @@ import {
     saveJourneyFolders,
 } from "../../Features/journey/Storage/journeyStorage";
 
-import { sendSnapshot } from "../Snapshot/syncManager";
 
 
 // 2026-08-25 — Rebuild the current Snapshot from the latest local state, save it locally, and hand it to the Sync Manager.
-async function processCurrentSnapshot(): Promise<Snapshot | null>
+export function processCurrentSnapshot(): Snapshot | null
 {
     const currentSnapshot = loadCurrentSnapshot();
 
@@ -47,97 +46,150 @@ async function processCurrentSnapshot(): Promise<Snapshot | null>
 
     saveCurrentSnapshot(updatedSnapshot);
 
-    await signalSyncManager(updatedSnapshot);
-
+    
     return updatedSnapshot;
 }
 
 
 // 2026-08-23 — Explicitly capture the latest local state and signal the Sync Manager.
-export async function explicitSave(): Promise<Snapshot | null> {
-    return await processCurrentSnapshot();
+export  function explicitSave(): Snapshot | null
+ {
+    return  processCurrentSnapshot();
 }
 
 
 // 2026-08-23 — Capture the latest local state when the application is closing and signal the Sync Manager.
-export async function applicationClosing(): Promise<Snapshot | null> {
-    return await processCurrentSnapshot();
+export function applicationClosing():Snapshot | null
+ {
+    return processCurrentSnapshot();
 }
-
-function reconcileCollection<T extends { id: string }>(
+function reconcileCollection<T extends { id: string; updatedAt: string }>(
     localItems: T[],
     cloudItems: T[]
-): T[] 
-{
-    const mergedItems = [...localItems];
+): T[] {
+    const resolvedItems: T[] = [];
 
-    for (const cloudItem of cloudItems) 
-        {
-        const existsLocally = mergedItems.some(
-            localItem => localItem.id === cloudItem.id
+    const allIds = new Set([
+        ...localItems.map(item => item.id),
+        ...cloudItems.map(item => item.id),
+    ]);
+
+    for (const id of allIds) {
+        const localItem = localItems.find(
+            item => item.id === id
         );
 
-        if (!existsLocally) {
-            mergedItems.push(cloudItem);
+        const cloudItem = cloudItems.find(
+            item => item.id === id
+        );
+
+        if (!localItem && cloudItem) {
+            resolvedItems.push(cloudItem);
+            continue;
+        }
+
+        if (localItem && !cloudItem) {
+            resolvedItems.push(localItem);
+            continue;
+        }
+
+        if (!localItem || !cloudItem) {
+            continue;
+        }
+
+        if (
+            localItem.updatedAt >= cloudItem.updatedAt
+        ) {
+            resolvedItems.push(localItem);
+        } else {
+            resolvedItems.push(cloudItem);
         }
     }
 
-    return mergedItems;
+    return resolvedItems;
 }
-
 function reconcileJourneyCollection(
     localJourneys: Snapshot["journeys"],
     cloudJourneys: Snapshot["journeys"]
 ): Snapshot["journeys"] {
-    const mergedJourneys = [...localJourneys];
+    const resolvedJourneys: Snapshot["journeys"] = [];
 
-    for (const cloudJourney of cloudJourneys) {
-        const existsLocally = mergedJourneys.some(
-            localJourney =>
-                localJourney.journeyId === cloudJourney.journeyId
+    const allIds = new Set([
+        ...localJourneys.map(
+            journey => journey.journeyId
+        ),
+        ...cloudJourneys.map(
+            journey => journey.journeyId
+        ),
+    ]);
+
+    for (const journeyId of allIds) {
+        const localJourney = localJourneys.find(
+            journey =>
+                journey.journeyId === journeyId
         );
 
-        if (!existsLocally) {
-            mergedJourneys.push(cloudJourney);
+        const cloudJourney = cloudJourneys.find(
+            journey =>
+                journey.journeyId === journeyId
+        );
+
+        if (!localJourney && cloudJourney) {
+            resolvedJourneys.push(cloudJourney);
+            continue;
+        }
+
+        if (localJourney && !cloudJourney) {
+            resolvedJourneys.push(localJourney);
+            continue;
+        }
+
+        if (!localJourney || !cloudJourney) {
+            continue;
+        }
+
+        if (
+            localJourney.updatedAt >=
+            cloudJourney.updatedAt
+        ) {
+            resolvedJourneys.push(localJourney);
+        } else {
+            resolvedJourneys.push(cloudJourney);
         }
     }
 
-    return mergedJourneys;
+    return resolvedJourneys;
 }
 
-// 2026-08-25 — Reconcile cloud data into the local Snapshot, including Pages and Blocks, and materialize a fresh Snapshot timestamp.
-export function reconcileCurrentSnapshotWithCloud(
+
+// 2026-08-25 — Compare the current local Snapshot against
+// the Snapshot retrieved from the cloud and produce the
+// resolved Snapshot.
+//
+// This function performs reconciliation only.
+// It does not communicate with Firebase.
+export function reconcileSnapshots(
+    localSnapshot: Snapshot,
     cloudSnapshot: Snapshot
-): Snapshot {
-    const localSnapshot = loadCurrentSnapshot();
-
-    if (!localSnapshot) {
-        const currentSnapshot: Snapshot = {
-            ...cloudSnapshot,
-            updatedAt: new Date().toISOString(),
-        };
-
-        saveCurrentSnapshot(currentSnapshot);
-
-        return currentSnapshot;
-    }
-
-    const currentSnapshot: Snapshot = {
+): Snapshot
+{
+    const resolvedSnapshot: Snapshot = {
         ...localSnapshot,
 
-        userId: cloudSnapshot.userId,
+        userId:
+            localSnapshot.userId,
 
-        tasks: reconcileCollection(
-            localSnapshot.tasks,
-            cloudSnapshot.tasks
-        ),
+        tasks:
+            reconcileCollection(
+                localSnapshot.tasks,
+                cloudSnapshot.tasks
+            ),
 
-         pages:
+        pages:
             reconcileCollection(
                 localSnapshot.pages,
                 cloudSnapshot.pages
             ),
-
 
         blocks:
             reconcileCollection(
@@ -145,35 +197,41 @@ export function reconcileCurrentSnapshotWithCloud(
                 cloudSnapshot.blocks
             ),
 
-        notebooks: reconcileCollection(
-            localSnapshot.notebooks,
-            cloudSnapshot.notebooks
-        ),
+        notebooks:
+            reconcileCollection(
+                localSnapshot.notebooks,
+                cloudSnapshot.notebooks
+            ),
 
-        notebookFolders: reconcileCollection(
-            localSnapshot.notebookFolders,
-            cloudSnapshot.notebookFolders
-        ),
+        notebookFolders:
+            reconcileCollection(
+                localSnapshot.notebookFolders,
+                cloudSnapshot.notebookFolders
+            ),
 
-        journeys: reconcileJourneyCollection(
-            localSnapshot.journeys,
-            cloudSnapshot.journeys
-        ),
+        journeys:
+            reconcileJourneyCollection(
+                localSnapshot.journeys,
+                cloudSnapshot.journeys
+            ),
 
-        journeyFolders: reconcileCollection(
-            localSnapshot.journeyFolders,
-            cloudSnapshot.journeyFolders
-        ),
+        journeyFolders:
+            reconcileCollection(
+                localSnapshot.journeyFolders,
+                cloudSnapshot.journeyFolders
+            ),
 
-        updatedAt: new Date().toISOString(),
+        updatedAt:
+            new Date().toISOString(),
     };
 
-    saveCurrentSnapshot(currentSnapshot);
-
-    return currentSnapshot;
+    return resolvedSnapshot;
 }
 
-// 2026-08-25 — Restore Tasks, Notebooks, Folders, Pages, Blocks, and Journeys from a Snapshot into their local storage collections.
+// 2026-08-25 — Restore the resolved Snapshot into the
+// application's local storage collections.
+//
+// This function performs local storage work only.
 export function restoreSnapshotToLocalStorage(
     snapshot: Snapshot
 ): Snapshot
@@ -193,14 +251,12 @@ export function restoreSnapshotToLocalStorage(
     const currentJourneyFolders =
         loadJourneyFolders();
 
-
     const currentPages =
         loadPages();
 
     const currentBlocks =
         loadBlocks();
 
-   
 
     const restoredTasks =
         reconcileCollection(
@@ -231,7 +287,7 @@ export function restoreSnapshotToLocalStorage(
             currentJourneys,
             snapshot.journeys
         );
-    
+
     const restoredPages =
         reconcileCollection(
             currentPages,
@@ -244,7 +300,6 @@ export function restoreSnapshotToLocalStorage(
             snapshot.blocks
         );
 
-    
 
     saveTasks(
         restoredTasks
@@ -311,15 +366,30 @@ export function restoreSnapshotToLocalStorage(
     return restoredSnapshot;
 }
 
-// 2026-08-23 — Reserve the scheduling entry point for future Snapshot Manager rules.
-export function futureSyncRule(): void {
-    // Future rules will invoke processCurrentSnapshot().
-}
+// 2026-08-25 — Resolve a cloud Snapshot against the current
+// local Snapshot and materialize the resolved state locally.
+//
+// The Sync Manager is responsible for retrieving the cloud
+// Snapshot and pushing the returned resolved Snapshot.
+export function reconcileAndRestoreSnapshot(
+    localSnapshot: Snapshot,
+    cloudSnapshot: Snapshot
+): Snapshot
+{
+    const resolvedSnapshot =
+        reconcileSnapshots(
+            localSnapshot,
+            cloudSnapshot
+        );
 
+    saveCurrentSnapshot(
+        resolvedSnapshot
+    );
 
-// 2026-08-25 — Forward a freshly materialized Snapshot to the Sync Manager so Firebase synchronization remains centralized.
-async function signalSyncManager(
-    snapshot: Snapshot
-): Promise<void> {
-    await sendSnapshot(snapshot);
+    const restoredSnapshot =
+        restoreSnapshotToLocalStorage(
+            resolvedSnapshot
+        );
+
+    return restoredSnapshot;
 }

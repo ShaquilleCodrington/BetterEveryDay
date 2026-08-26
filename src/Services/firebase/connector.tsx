@@ -25,8 +25,7 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { subscribeToAuthState, logout as firebaseLogout } from "./auth";
 import { getProfile, saveProfile } from "../../Data/profileStorage";
-import { synchronizeOnLogin } from "../Snapshot/syncManager";
-
+import { sync } from "../Snapshot/syncManager";
 /**
  * Call once near the root of the app (e.g. in App.tsx).
  * Subscribes to Firebase auth state for the lifetime of the
@@ -47,11 +46,12 @@ export function useAuthConnector(): User | null {
 
                 await syncProfileUid(nextUid);
 
-                // 2026-08-23 — When Firebase confirms an authenticated
-                // user, restore that user's Continuity Snapshot.
+                // 2026-08-26 — When Firebase confirms an authenticated
+// user, synchronize the local state with the shared
+// Continuity Snapshot.
                 if (user) {
                     try {
-                        await synchronizeOnLogin(user.uid);
+                        await sync(user.uid);
                     }
                     catch (error) {
                         console.error(

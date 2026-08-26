@@ -23,14 +23,7 @@ import {
   saveJourneyFolders,
 } from "../Features/journey/Storage/journeyStorage";
 
-import {
-  createSnapshot,
-  saveCurrentSnapshot,
-} from "../Services/Snapshot/snapshot";
-
-import {
-  sendSnapshot,
-} from "../Services/Snapshot/syncManager";
+import { sync } from "../Services/Snapshot/syncManager";
 
 // ── Default avatar icon shown when no photo has been set ──────────────────
 function DefaultAvatarIcon() {
@@ -347,12 +340,15 @@ export default function ProfilePage() {
     setEditing(false);
   }
 
-  async function handleSave() {
-    await saveProfile(draft);
-    setProfile(draft);
-    setEditing(false);
-  }
+  async function handleSync() {
+  await saveProfile(draft);
+  setProfile(draft);
+  setEditing(false);
 
+  if (currentUser) {
+    await sync(currentUser.uid);
+  }
+}
   async function handleMigrateGuestData() {
   if (!currentUser) {
     return;
@@ -440,11 +436,7 @@ export default function ProfilePage() {
     // newly migrated local data.
     // ======================================================
 
-    const snapshot = createSnapshot(userId);
-
-    saveCurrentSnapshot(snapshot);
-
-    await sendSnapshot(snapshot);
+   const snapshot =await sync(userId);
 
     console.log(
       "Legacy guest data successfully migrated:",
@@ -520,12 +512,9 @@ export default function ProfilePage() {
               gap: "8px",
             }}
           >
-            <button
-              className="btn-primary"
-              onClick={handleSave}
-            >
-              Save Changes
-            </button>
+            <button type="button" onClick={handleSync}>
+                Sync
+              </button>
 
             <button
               type="button"

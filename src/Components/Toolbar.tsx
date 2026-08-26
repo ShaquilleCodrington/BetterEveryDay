@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
-import { createSnapshot } from "../Services/Snapshot/snapshot";
-import { sendSnapshot } from "../Services/Snapshot/syncManager";
+import { sync } from "../Services/Snapshot/syncManager";
 import type { User } from "firebase/auth";
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
@@ -84,15 +83,29 @@ export default function Toolbar({
 
   const navigate = useNavigate();
   
-  // 2026-08-23 — Manually create the latest local Snapshot and send it to Firestore.
-async function handleSave() {
+  // Run Continuity synchronization and reconciliation.
+async function handleSync() {
   if (!currentUser) {
     return;
   }
 
-  const snapshot = createSnapshot(currentUser.uid);
+  try {
+    const resolvedSnapshot = await sync(currentUser.uid);
 
-  await sendSnapshot(snapshot);
+    if (!resolvedSnapshot) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new Event("continuity-sync-complete")
+    );
+  }
+  catch (error) {
+    console.error(
+      "Continuity sync failed:",
+      error
+    );
+  }
 }
 
    async function handleLogout() {
@@ -136,11 +149,11 @@ async function handleSave() {
   }}
 >
   {currentUser && (
-    <Tooltip text="Save your current data to the cloud">
-      <button type="button" onClick={handleSave}>
-        Save
-      </button>
-    </Tooltip>
+    <Tooltip text="Synchronize your data across devices">
+  <button type="button" onClick={handleSync}>
+    Sync
+  </button>
+</Tooltip>
   )}
 
   {currentUser ? (
