@@ -6,6 +6,7 @@ import {
 
 import {
     saveCurrentSnapshot,
+    normalizeSnapshot,
     type Snapshot,
 } from "./snapshot";
 
@@ -51,7 +52,18 @@ export async function receiveSnapshot(
         return null;
     }
 
-    return snapshotDocument.data() as Snapshot;
+    const data =
+        snapshotDocument.data() as Partial<Snapshot>;
+
+
+    const normalizedSnapshot =
+        normalizeSnapshot(
+            data,
+            userId
+        );
+
+
+    return normalizedSnapshot;
 }
 
 
@@ -103,65 +115,134 @@ export async function sync(
         return null;
     }
 
-    // 4. No local state, but cloud state exists.
-    //    New browser/device.
-    if (localSnapshot === null && cloudSnapshot !== null) {
-        saveCurrentSnapshot(cloudSnapshot);
+    // --------------------------------------------------
+    // 4. Cloud exists but local does not.
+    // --------------------------------------------------
+    if (
+        localSnapshot === null &&
+        cloudSnapshot !== null
+    ) {
 
-        await restoreSnapshotToLocalStorage(
-            cloudSnapshot
+        const normalizedCloudSnapshot =
+            normalizeSnapshot(
+                cloudSnapshot,
+                userId
+            );
+
+
+        saveCurrentSnapshot(
+            normalizedCloudSnapshot
         );
 
-        return cloudSnapshot;
+
+        const restoredSnapshot =
+            await restoreSnapshotToLocalStorage(
+                normalizedCloudSnapshot
+            );
+
+
+        return restoredSnapshot;
     }
+if (
+        localSnapshot !== null &&
+        cloudSnapshot === null
+    ) {
 
-    // 5. Local state exists, but cloud state does not.
-    //    Establish the cloud snapshot from local state.
-    if (localSnapshot !== null && cloudSnapshot === null) {
-        saveCurrentSnapshot(localSnapshot);
+        const normalizedLocalSnapshot =
+            normalizeSnapshot(
+                localSnapshot,
+                userId
+            );
 
-        await restoreSnapshotToLocalStorage(
-            localSnapshot
+
+        saveCurrentSnapshot(
+            normalizedLocalSnapshot
         );
 
-        await sendSnapshot(localSnapshot);
 
-        return localSnapshot;
+        const restoredSnapshot =
+            await restoreSnapshotToLocalStorage(
+                normalizedLocalSnapshot
+            );
+
+
+        await sendSnapshot(
+            restoredSnapshot
+        );
+
+
+        return restoredSnapshot;
     }
 
-    // 6. At this point BOTH snapshots exist.
-    //
-    // TypeScript still may not preserve the relationship
-    // between the two independent checks above, so explicitly
-    // narrow them before reconciliation.
 
-    if (localSnapshot === null || cloudSnapshot === null) {
+    // --------------------------------------------------
+    // TypeScript narrowing.
+    // --------------------------------------------------
+    if (
+        localSnapshot === null ||
+        cloudSnapshot === null
+    ) {
         return null;
     }
 
-    // 7. Reconcile local and cloud.
-    const resolvedSnapshot =
-        reconcileSnapshots(
+
+    // --------------------------------------------------
+    // 6. Both Snapshots exist.
+    //
+    // Normalize both sides before reconciliation.
+    // --------------------------------------------------
+    const normalizedLocalSnapshot =
+        normalizeSnapshot(
             localSnapshot,
-            cloudSnapshot
+            userId
         );
 
-    // 8. Save resolved snapshot locally.
+
+    const normalizedCloudSnapshot =
+        normalizeSnapshot(
+            cloudSnapshot,
+            userId
+        );
+
+
+    // --------------------------------------------------
+    // 7. Reconcile local and cloud.
+    // --------------------------------------------------
+    const resolvedSnapshot =
+        reconcileSnapshots(
+            normalizedLocalSnapshot,
+            normalizedCloudSnapshot
+        );
+
+
+    // --------------------------------------------------
+    // 8. Save resolved Snapshot locally.
+    // --------------------------------------------------
     saveCurrentSnapshot(
         resolvedSnapshot
     );
 
-    // 9. Materialize resolved state into application storage.
+
+    // --------------------------------------------------
+    // 9. Materialize resolved state into application
+    // storage.
+    // --------------------------------------------------
     const restoredSnapshot =
         await restoreSnapshotToLocalStorage(
             resolvedSnapshot
         );
 
-    // 10. Push the same resolved state to Firebase.
+
+    // --------------------------------------------------
+    // 10. Push exactly the resolved state to Firebase.
+    // --------------------------------------------------
     await sendSnapshot(
         restoredSnapshot
     );
 
+
+    // --------------------------------------------------
     // 11. Return final state.
+    // --------------------------------------------------
     return restoredSnapshot;
 }

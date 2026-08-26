@@ -4,6 +4,7 @@ import {
     saveCurrentSnapshot,
     type Snapshot,
     createSnapshot,
+    normalizeSnapshot,
 } from "./snapshot";
 
 import {
@@ -36,7 +37,7 @@ import {
 // 2026-08-25 — Rebuild the current Snapshot from the latest local state, save it locally, and hand it to the Sync Manager.
 export async function processCurrentSnapshot(userId?: string): Promise<Snapshot | null>
 {
-    const currentSnapshot = loadCurrentSnapshot();
+    let currentSnapshot = loadCurrentSnapshot();
 
     if (!currentSnapshot) 
         {if (!userId) {
@@ -52,6 +53,15 @@ export async function processCurrentSnapshot(userId?: string): Promise<Snapshot 
         );
 
         return newSnapshot;
+    }
+    
+     if (userId) {
+
+        currentSnapshot =
+            normalizeSnapshot(
+                currentSnapshot,
+                userId
+            );
     }
     
     const updatedSnapshot =

@@ -15,9 +15,11 @@ import type {
 import {
     loadJourneys, loadJourneyFolders,
 } from "../../Features/journey/Storage/journeyStorage";
-import type { ProfileData } from "../../Data/profileStorage";
-import { getProfile } from "../../Data/profileStorage";
-
+import {
+    type ProfileData,
+    getProfile,
+    normalizeProfile,
+} from "../../Data/profileStorage";
 
 // 2026-08-23 — Define the local storage key for the latest winning Snapshot.
 const CURRENT_SNAPSHOT_KEY = "currentSnapshot";
@@ -49,8 +51,14 @@ export async function createSnapshot(
 ): Promise<Snapshot>
 {
 
-    const profile = await getProfile();
+      const storedProfile =
+        await getProfile();
 
+    const profile =
+        normalizeProfile(
+            storedProfile,
+            userId
+        );
     const allTasks =
         loadTasks();
 
@@ -169,6 +177,65 @@ export async function createSnapshot(
     };
 }
 
+export function normalizeSnapshot(
+    snapshot: Partial<Snapshot>,
+    userId: string
+): Snapshot {
+
+    const now =
+        new Date().toISOString();
+
+    const profile =
+        normalizeProfile(
+            snapshot.profile,
+            userId
+        );
+
+    const profileUpdatedAt =
+        snapshot.profileUpdatedAt ??
+        snapshot.updatedAt ??
+        snapshot.createdAt ??
+        now;
+
+
+    return {
+        ...snapshot,
+
+        userId,
+
+        profile,
+
+        profileUpdatedAt,
+
+        tasks:
+            snapshot.tasks ?? [],
+
+        pages:
+            snapshot.pages ?? [],
+
+        blocks:
+            snapshot.blocks ?? [],
+
+        notebooks:
+            snapshot.notebooks ?? [],
+
+        notebookFolders:
+            snapshot.notebookFolders ?? [],
+
+        journeys:
+            snapshot.journeys ?? [],
+
+        journeyFolders:
+            snapshot.journeyFolders ?? [],
+
+        createdAt:
+            snapshot.createdAt ?? now,
+
+        updatedAt:
+            snapshot.updatedAt ?? now,
+    } as Snapshot;
+}
+
 
 // 2026-08-23 — Load the latest winning Snapshot used as the local comparison baseline.
 export function loadCurrentSnapshot(): Snapshot | null {
@@ -201,57 +268,64 @@ export function saveCurrentSnapshot(
     );
 }
 
+// ------------------------------------------------------
+// Detect profile changes and update the Snapshot.
+// ------------------------------------------------------
 export async function updateProfileSnapshot(
     snapshot: Snapshot
 ): Promise<Snapshot> {
-    const currentProfile = await getProfile();
+
+    const currentProfile =
+        await getProfile();
 
 
-    if (!currentProfile) {
-        return snapshot;
-    }
-     const snapshotProfile = snapshot.profile;
-
-    if (!snapshotProfile) {
-        const now = new Date().toISOString();
-
-        return {
-            ...snapshot,
-
-            profile:
-                currentProfile,
-
-            profileUpdatedAt:
-                now,
-
-            updatedAt:
-                now,
-        };
-    }
-    const changed =
-        currentProfile.uid !== snapshot.profile.uid ||
-        currentProfile.name !== snapshot.profile.name ||
-        currentProfile.primaryTitle !== snapshot.profile.primaryTitle ||
-        currentProfile.bio !== snapshot.profile.bio ||
-        currentProfile.photo !== snapshot.profile.photo ||
-        currentProfile.titles.length !== snapshot.profile.titles.length ||
-        currentProfile.titles.some(
-            (title, index) =>
-                title !== snapshot.profile.titles[index]
+    const normalizedCurrentProfile =
+        normalizeProfile(
+            currentProfile,
+            snapshot.userId
         );
+
+
+    const changed =
+        normalizedCurrentProfile.uid !==
+            snapshot.profile.uid ||
+
+        normalizedCurrentProfile.name !==
+            snapshot.profile.name ||
+
+        normalizedCurrentProfile.primaryTitle !==
+            snapshot.profile.primaryTitle ||
+
+        normalizedCurrentProfile.bio !==
+            snapshot.profile.bio ||
+
+        normalizedCurrentProfile.photo !==
+            snapshot.profile.photo ||
+
+        normalizedCurrentProfile.titles.length !==
+            snapshot.profile.titles.length ||
+
+        normalizedCurrentProfile.titles.some(
+            (title, index) =>
+                title !==
+                snapshot.profile.titles[index]
+        );
+
 
     if (!changed) {
         return snapshot;
     }
 
+
     const now =
         new Date().toISOString();
+
 
     return {
         ...snapshot,
 
         profile:
-            currentProfile,
+            normalizedCurrentProfile,
 
         profileUpdatedAt:
             now,
@@ -260,6 +334,7 @@ export async function updateProfileSnapshot(
             now,
     };
 }
+
 export function updateTaskSnapshot(
     snapshot: Snapshot
 ): Snapshot {
