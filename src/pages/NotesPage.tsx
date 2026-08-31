@@ -1,5 +1,5 @@
 import { useNotesPageFunctions } from "../Features/notes/editor/NotesPageFunctions";
-import { useState } from "react";
+import { useState} from "react";
 import NotebookBrowser from "../Features/notes/browser/NotebookBrowser";
 import BlockList from "../Features/notes/editor/BlockList";
 import CreateTaskPopup from "../Components/CreateTaskPopup";
@@ -24,7 +24,6 @@ export default function NotesPage({
 
     const smoothScroll = useSmoothScroll();
 
-  
     const {
     folders,
     notebooks,
@@ -223,59 +222,117 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
                         )}
 
                         {/* TASK PICKER */}
-                        <Tooltip text="Drop an existing task into this page">
-                            <button
-                                onClick={() => setShowTaskPicker(true)}
-                                style={{ alignSelf: "flex-start", marginBottom: "24px" }}
-                            >
-                                + Add Task Block
-                            </button>
-                        </Tooltip>
-                        </div>
-                        {showTaskPicker && (
-
-                            <div
-                                className={`popover-panel${smoothScroll ? "" : " no-motion"}`}
+                        <div
                                 style={{
-                                    position: "absolute",
-                                    top: 160,
-                                    right: "clamp(16px, 4vw, 48px)",
-                                    width: "min(300px, calc(100vw - 32px))",
-                                    maxWidth: "calc(100vw - 32px)",
-                                    boxSizing: "border-box",
-                                    background: "#1a1a2e",
-                                    borderRadius: 8,
-                                    padding: 12,
-                                    zIndex: 1000,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "flex-start",
+                                    width: "min(360px, 100%)",
                                 }}
                             >
-                                <h4>Select Task</h4>
-
-                                {tasks.map((task) => (
-                                    <div
-                                        key={task.id}
+                                <Tooltip text="Drop an existing task into this page">
+                                    <button
                                         onClick={() =>
-                                            handleInsertTaskBlock(task.id)
+                                            setShowTaskPicker(
+                                                !showTaskPicker
+                                            )
                                         }
                                         style={{
-                                            padding: "10px",
-                                            cursor: "pointer",
-                                            overflowWrap: "anywhere",
-                                            borderBottom:
-                                                "1px solid rgba(255,255,255,.15)",
+                                            alignSelf: "flex-start",
                                         }}
                                     >
-                                        {task.title}
-                                    </div>
-                                ))}
+                                        + Add Task Block
+                                    </button>
+                                </Tooltip>
 
-                                <button
-                                    onClick={() => setShowTaskPicker(false)}
-                                >
-                                    Close
-                                </button>
+                                {showTaskPicker && (
+                                    <div
+                                        className={`popover-panel${smoothScroll ? "" : " no-motion"}`}
+                                        style={{
+                                            width: "100%",
+                                            boxSizing: "border-box",
+
+                                            marginTop: "8px",
+
+                                            background: "#1a1a2e",
+
+                                            borderRadius: 8,
+
+                                            padding: 12,
+
+                                            zIndex: 1000,
+
+                                            /*
+                                             * The dropdown is now part of
+                                             * the page layout instead of
+                                             * floating over the screen.
+                                             *
+                                             * Few tasks = natural height.
+                                             * Many tasks = internal scroll.
+                                             */
+                                            maxHeight: "320px",
+                                            overflowY: "auto",
+                                            overflowX: "hidden",
+
+                                            boxShadow:
+                                                "0 8px 24px rgba(0,0,0,.35)",
+                                        }}
+                                    >
+                                        <h4
+                                            style={{
+                                                marginTop: 0,
+                                                marginBottom: 8,
+                                            }}
+                                        >
+                                            Select Task
+                                        </h4>
+
+                                        {tasks.length === 0 ? (
+                                            <div
+                                                style={{
+                                                    padding: "10px 0",
+                                                    opacity: 0.7,
+                                                }}
+                                            >
+                                                No tasks available.
+                                            </div>
+                                        ) : (
+                                            tasks.map((task) => (
+                                                <div
+                                                    key={task.id}
+                                                    onClick={() =>
+                                                        handleInsertTaskBlock(
+                                                            task.id
+                                                        )
+                                                    }
+                                                    style={{
+                                                        padding: "10px",
+                                                        cursor: "pointer",
+                                                        overflowWrap:
+                                                            "anywhere",
+                                                        borderBottom:
+                                                            "1px solid rgba(255,255,255,.15)",
+                                                    }}
+                                                >
+                                                    {task.title}
+                                                </div>
+                                            ))
+                                        )}
+
+                                        <button
+                                            onClick={() =>
+                                                setShowTaskPicker(false)
+                                            }
+                                            style={{
+                                                marginTop: 12,
+                                            }}
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
 
                         <hr style={{ margin: "40px 0" }} />
 
