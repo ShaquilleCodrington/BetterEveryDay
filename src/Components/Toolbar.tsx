@@ -5,6 +5,8 @@ import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
 import { sync } from "../Services/Snapshot/syncManager";
 import type { User } from "firebase/auth";
+import { PanelLeft } from "lucide-react";
+
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
   return (
@@ -73,11 +75,12 @@ function ProfileButton() {
 }
 // CHANGED: reverted — Toolbar no longer needs collapsed/onToggleSidebar props
 export default function Toolbar({
-     currentUser, onLogin, onLogout,  
+     currentUser, onLogin, onLogout, onToggleSidebar, 
     }: {
    currentUser: User | null;
    onLogin: () => void;
    onLogout: () => Promise<void>;
+   onToggleSidebar: () => void;
       })
     {
 
@@ -115,7 +118,18 @@ async function handleSync() {
   return (
     <div className="toolbar">
 
-      
+          {/* Sidebar toggle */}
+      <Tooltip text="Toggle sidebar">
+        <button
+          className="toolbar-icon-btn"
+          onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
+        >
+          <PanelLeft size={18} />
+        </button>
+      </Tooltip>
+
+   
       {/* Profile button */}
       <ProfileButton />
 

@@ -244,6 +244,7 @@ function handleSidebarToggle() {
         <Toolbar currentUser={currentUser} 
             onLogin={onLogin}
             onLogout={onLogout}
+            onToggleSidebar={handleSidebarToggle}
              />
 
         <div className="page-container">

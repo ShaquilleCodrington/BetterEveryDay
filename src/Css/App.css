@@ -148,6 +148,7 @@
 
 /* ── Main Content ───────────────────────────────────────────────────────── */
 .main-content {
+  position:relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -187,6 +188,7 @@
 
 /* ── Page Container ─────────────────────────────────────────────────────── */
 .page-container {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -556,20 +558,30 @@
 }
 
 .browser-panel {
-  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   padding: 12px;
+
+ background: var(--bg-panel);
+  backdrop-filter: blur(var(--blur-panel));
+  -webkit-backdrop-filter: blur(var(--blur-panel));
+
   border-right: 1px solid var(--border-panel);
-  height: 100%;
+
   min-height: 0;
   overflow: hidden;
   transition: width 0.2s ease, padding 0.2s ease;
 }
 
 .browser-panel--collapsed {
-  width: 100%;
+  width: 56px;
   padding: 12px 8px;
 }
 
