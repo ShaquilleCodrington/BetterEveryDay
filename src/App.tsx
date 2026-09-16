@@ -120,8 +120,8 @@ async function handleLogout(): Promise<void> {
     
             currentUser={currentUser}
             onLogin={() => {
-              setGuestMode(false);
-              setAuthStatus("login");
+                setGuestMode(false);
+                setAuthStatus("login");
             }}
             onLogout={handleLogout}
           />
@@ -201,9 +201,20 @@ function MainLayout({
   onLogin: () => void;
   onLogout: () => Promise<void>;
 }) {
+type SidebarState = "closed" | "collapsed" | "open";
 
-   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+   const [sidebarState, setSidebarState] =
+     useState<SidebarState>("open");
 
+function handleSidebarToggle() {
+    setSidebarState((currentState) => {
+        if (currentState === "closed")
+         { return "collapsed"; }
+        if (currentState === "collapsed")
+            { return "open"; }
+
+            return "closed"; }
+            );}
   return(
     <div className="app-shell"
      style={{
@@ -214,15 +225,15 @@ function MainLayout({
     >
        <div
         style={{
-            flex: `0 0 ${sidebarCollapsed ? "8%" : "13%"}`,
+            flex: `0 0 ${sidebarState === "closed" ? "0%"
+                : sidebarState === "collapsed" ? "8%" : "13%"}`,
             minWidth: 0,
         }}>
 
         
     <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
-      />
+        state={sidebarState}
+        onToggle={handleSidebarToggle} />
       </div>
 
       <div className="main-content"

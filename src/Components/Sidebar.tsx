@@ -3,23 +3,31 @@ import Tooltip from "./Tooltip";
 // CHANGED: import the Lucide icons used in the nav
 import { Signpost, ListTodo, Sticker, NotebookTabs, Road, PanelLeft } from "lucide-react";
 // CHANGED: added props so the parent (MainLayout) can control collapsed state
+
+type SidebarState = "closed" | "collapsed" | "open";
+
 interface SidebarProps {
-  collapsed: boolean;
-  onToggleCollapse: () => void; 
+  state: SidebarState;
+    onToggle: () => void;
 }
 
 // CHANGED: now accepts `collapsed` prop
-export default function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
-  return (
+export default function Sidebar({ state, onToggle }: SidebarProps) {
 
+
+// Completely gone
+ if (state === "closed") {
+     return null; }
+ // Existing icons-only behavior
+ const collapsed = state === "collapsed";
+
+ return (
    <div className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}>
      <div className="sidebar-logo-row">
         <Tooltip text={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          <button
-            className="toolbar-icon-btn"
-            onClick={onToggleCollapse}
-            aria-label="Toggle sidebar"
-          >
+          <button className="toolbar-icon-btn"
+                    onClick={onToggle} aria-label="Toggle sidebar" >
+
             <PanelLeft size={18} />
           </button>
         </Tooltip>
