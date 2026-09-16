@@ -25,7 +25,7 @@ export default function EditTaskPopup({ task, onClose, onSave }: EditTaskPopupPr
       priority,
       dueDate,
       completed: status === "Completed",
-      updatedAt: new Date().toLocaleDateString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 

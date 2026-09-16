@@ -22,6 +22,7 @@ import { loadNotebooks, saveNotebooks } from "../../notes/storage/notebookStorag
 import PreviewLayout from "../../../Components/Dashboard/PreviewLayout";
 import { getMostRecentJourney } from "./journeyQueries";
 import { createJourney } from "./JourneyFactory";
+import { useAuthConnector } from "../../../Services/firebase/connector";
 
 
 let rememberedJourneyId: string | null = null;
@@ -183,9 +184,13 @@ else
                 plan.journeyId === selectedJourneyId
         ) ?? null;
 
+    const currentUser = useAuthConnector();
+    
     function handleCreateJourney()
 {
-    const { journey, notebook } = createJourney();
+
+    const userId = currentUser?.uid ?? null;
+    const { journey, notebook } = createJourney(userId);
 
     const updatedJourneys = [...journeys, journey];
     const updatedNotebooks = [...notebooks, notebook];

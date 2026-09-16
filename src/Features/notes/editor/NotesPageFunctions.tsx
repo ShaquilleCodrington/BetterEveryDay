@@ -18,6 +18,12 @@ import {
 
 import { deleteSession } from "../../journey/Storage/sessionStorage";
 import { useAuthConnector } from "../../../Services/firebase/connector";
+import {
+    loadCurrentSnapshot,
+    saveCurrentSnapshot,
+    updateBlockSnapshot,
+    createSnapshot,
+} from "../../../Services/Snapshot/snapshot";
 
 export function useNotesPageFunctions({
     selectedPageId,
@@ -597,7 +603,7 @@ export function useNotesPageFunctions({
     // Block Actions
     // ==================================================
 
-    function handleUpdateBlock(
+    async function handleUpdateBlock(
         blockId: string,
         content: any
     )
@@ -633,6 +639,7 @@ export function useNotesPageFunctions({
                     updatedAt,
                 };
             });
+
 
         setBlocks(updatedBlocks);
         saveBlocks(updatedBlocks);
@@ -695,6 +702,22 @@ export function useNotesPageFunctions({
 
         setNotebooks(updatedNotebooks);
         saveNotebooks(updatedNotebooks);
+
+        // Snapshot
+        const currentSnapshot = loadCurrentSnapshot();
+        const userId = currentUser?.uid;
+
+        if (!userId) {
+            return;
+        }
+        const snapshot =
+            currentSnapshot ??
+            await createSnapshot(userId!);
+
+        const updatedSnapshot =
+            updateBlockSnapshot(snapshot);
+
+        saveCurrentSnapshot(updatedSnapshot);
     }
 
 

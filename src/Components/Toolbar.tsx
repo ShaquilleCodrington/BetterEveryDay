@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getProfile } from "../Data/profileStorage";
 import ContextHelpButton from "./ContextHelpButton";
 import Tooltip from "./Tooltip";
+import { sync } from "../Services/Snapshot/syncManager";
 import type { User } from "firebase/auth";
 // ── Default person icon shown when no profile photo has been set ─────────
 function DefaultAvatarIcon() {
@@ -82,6 +83,30 @@ export default function Toolbar({
 
   const navigate = useNavigate();
   
+  // Run Continuity synchronization and reconciliation.
+async function handleSync() {
+  if (!currentUser) {
+    return;
+  }
+
+  try {
+    const resolvedSnapshot = await sync(currentUser.uid);
+
+    if (!resolvedSnapshot) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new Event("continuity-sync-complete")
+    );
+  }
+  catch (error) {
+    console.error(
+      "Continuity sync failed:",
+      error
+    );
+  }
+}
 
    async function handleLogout() {
     await onLogout();
@@ -114,24 +139,33 @@ export default function Toolbar({
       </Tooltip>
 
        {/* Logout remains persistent beside the Help control. */}
+     
       <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        {currentUser ? (
-          <button type="button" onClick={handleLogout}>
-            Logout
-          </button>
-        ) : (
-          <button type="button" onClick={onLogin}>
-            Login
-          </button>
-        )}
-      </div>
+  style={{
+    marginLeft: "auto",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  }}
+>
+  {currentUser && (
+    <Tooltip text="Synchronize your data across devices">
+  <button type="button" onClick={handleSync}>
+    Sync
+  </button>
+</Tooltip>
+  )}
+
+  {currentUser ? (
+    <button type="button" onClick={handleLogout}>
+      Logout
+    </button>
+  ) : (
+    <button type="button" onClick={onLogin}>
+      Login
+    </button>
+  )}
+</div>
 
       {/* Help stays pinned to the right edge on its own */}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>

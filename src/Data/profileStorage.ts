@@ -43,40 +43,125 @@ export const DEFAULT_PROFILE: ProfileData = {
 const FALLBACK_KEY = "profile-data";
 
 function hasElectronProfileBridge(): boolean {
-    return typeof window !== "undefined" && !!window.electron?.profile;
+    return (
+        typeof window !== "undefined" &&
+        !!window.electron?.profile
+    );
 }
 
-{/* Reads the full profile from disk (via IPC), falling back to defaults */}
+// ------------------------------------------------------
+// Create a valid profile for an authenticated user.
+//
+// This guarantees that every authenticated user's
+// Snapshot has a profile object and that the profile
+// belongs to the authenticated UID.
+// ------------------------------------------------------
+export function createDefaultProfile(
+    userId: string
+): ProfileData {
+    return {
+        ...DEFAULT_PROFILE,
+        uid: userId,
+    };
+}
+
+// ------------------------------------------------------
+// Normalize any profile data into a complete ProfileData
+// object.
+//
+// This protects the Snapshot system from older or
+// incomplete profile data.
+// ------------------------------------------------------
+export function normalizeProfile(
+    profile: Partial<ProfileData> | null | undefined,
+    userId: string
+): ProfileData {
+    return {
+        ...DEFAULT_PROFILE,
+        ...(profile ?? {}),
+        uid: userId,
+        titles: Array.isArray(profile?.titles)
+            ? profile.titles
+            : [],
+    };
+}
+
+// ------------------------------------------------------
+// Read the full profile.
+// ------------------------------------------------------
 export async function getProfile(): Promise<ProfileData> {
     if (hasElectronProfileBridge()) {
         try {
-            const saved = await window.electron.profile.load();
-            return saved ? { ...DEFAULT_PROFILE, ...saved } : DEFAULT_PROFILE;
+            const saved =
+                await window.electron.profile.load();
+
+            return saved
+                ? {
+                    ...DEFAULT_PROFILE,
+                    ...saved,
+                    titles: Array.isArray(saved.titles)
+                        ? saved.titles
+                        : [],
+                }
+                : DEFAULT_PROFILE;
         } catch {
             return DEFAULT_PROFILE;
         }
     }
 
-    // Browser dev fallback
     try {
-        const raw = localStorage.getItem(FALLBACK_KEY);
-        return raw ? { ...DEFAULT_PROFILE, ...JSON.parse(raw) } : DEFAULT_PROFILE;
+        const raw =
+            localStorage.getItem(FALLBACK_KEY);
+
+        if (!raw) {
+            return DEFAULT_PROFILE;
+        }
+
+        const parsed =
+            JSON.parse(raw) as Partial<ProfileData>;
+
+        return {
+            ...DEFAULT_PROFILE,
+            ...parsed,
+            titles: Array.isArray(parsed.titles)
+                ? parsed.titles
+                : [],
+        };
     } catch {
         return DEFAULT_PROFILE;
     }
 }
 
-{/* Persists the full profile to disk (via IPC) and notifies listeners (e.g. Toolbar avatar) */}
-export async function saveProfile(profile: ProfileData): Promise<void> {
+// ------------------------------------------------------
+// Persist the full profile.
+// ------------------------------------------------------
+export async function saveProfile(
+    profile: ProfileData
+): Promise<void> {
+    const normalizedProfile: ProfileData = {
+        ...DEFAULT_PROFILE,
+        ...profile,
+        titles: Array.isArray(profile.titles)
+            ? profile.titles
+            : [],
+    };
+
     if (hasElectronProfileBridge()) {
-        await window.electron.profile.save(profile);
+        await window.electron.profile.save(
+            normalizedProfile
+        );
     } else {
         try {
-            localStorage.setItem(FALLBACK_KEY, JSON.stringify(profile));
+            localStorage.setItem(
+                FALLBACK_KEY,
+                JSON.stringify(normalizedProfile)
+            );
         } catch {
-            // ignore — nothing more we can do in this fallback path
+            // Nothing more we can do in fallback mode.
         }
     }
 
-    window.dispatchEvent(new CustomEvent("profile-update"));
+    window.dispatchEvent(
+        new CustomEvent("profile-update")
+    );
 }

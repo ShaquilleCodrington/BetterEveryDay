@@ -37,7 +37,6 @@ import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/c
 
 import { Routes, Route, Outlet } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
-import DashboardPage from "./pages/DashboardPage";
 import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
 import CongruencePage from "./pages/CongruencePage";
@@ -154,11 +153,8 @@ function MainApplication(
           />
         }
       >
-         <Route path="/" element={<DashboardPage />}>
-          <Route
-            index
-            element={<div>Home coming soon.</div>}
-          />
+         <Route path="/" element={<CongruencePage />}>
+           
 
           <Route
             path="journeyPreview"
