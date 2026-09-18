@@ -193,7 +193,7 @@ function MoodTintRow({ moodKey, label, accent }: {
 
 // ── Background mode hook ──────────────────────────────────────────────────
 function useBackgroundMode() {
-  const [mode, setMode] = useState(() => localStorage.getItem("background-mode") ?? "starfield");
+  const [mode, setMode] = useState(() => localStorage.getItem("background-mode") ?? "city");
   const set = useCallback((v: string) => {
     setMode(v);
     localStorage.setItem("background-mode", v);

@@ -640,12 +640,11 @@ const journeyBrowserBasis =
 
     return (
 
-        <div
+        <div className="glass-panel"
             style={{
                 display:"flex",
-                height:"100vh",
-                backgroundColor:
-                    "rgba(20,12,55,0.38)",
+                minHeight:"100vh",
+               
             }}
         >
 
@@ -725,10 +724,10 @@ const journeyBrowserBasis =
     onCollapseChange={setJourneyBrowserCollapsed}
 
 />
-</div>
+</div >
 
 
-            <main
+            <main 
                 style={{
                     flex:1,
                     minWidth: 0,
@@ -741,15 +740,15 @@ const journeyBrowserBasis =
             >
             {  selectedPage  ?
     (
-        <div
+        <div className="glass-panel"
             style={{
                 width:"95%",
                 maxWidth: "100%",
                 boxSizing: "border-box",
-                backgroundColor:"rgba(20,12,55,0.38)",
-                borderRadius:"10px",
                 padding: "clamp(16px, 4vw, 48px)",
-                minHeight:"900px",
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
             }}
         >
 
@@ -844,12 +843,10 @@ const journeyBrowserBasis =
                         {
                             activeSession &&
                             (
-                            <div
+                            <div className="glass-panel"
                             style={{
                                 marginTop:"20px",
                                 padding:"16px",
-                                borderRadius:"8px",
-                                background:"rgba(255,255,255,.05)",
                             }}
                             >
 
