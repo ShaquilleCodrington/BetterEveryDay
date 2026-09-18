@@ -226,7 +226,7 @@ function handleSidebarToggle() {
        <div
         style={{
             flex: `0 0 ${sidebarState === "closed" ? "0%"
-                : sidebarState === "collapsed" ? "8%" : "13%"}`,
+                : sidebarState === "collapsed" ? "7%" : "13%"}`,
             minWidth: 0,
         }}>
 

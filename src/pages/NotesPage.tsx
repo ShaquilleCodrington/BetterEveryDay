@@ -5,6 +5,7 @@ import BlockList from "../Features/notes/editor/BlockList";
 import CreateTaskPopup from "../Components/CreateTaskPopup";
 import { useSmoothScroll } from "../Data/useSmoothScroll";
 import Tooltip from "../Components/Tooltip";
+import { NotebookTabs, PanelLeft } from "lucide-react";
 
 interface NotesPageProps {
     initialNotebookId?: string;
@@ -79,10 +80,7 @@ const [notebookBrowserCollapsed, setNotebookBrowserCollapsed] =
     useState(false);
 
        
-const notebookBrowserBasis =  notebookBrowserCollapsed
-        ? "8%"
-        : "22%";
-
+const notebookBrowserBasis = "22%";
 
 
     return (
@@ -97,13 +95,15 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
             }}
         >
             
-        <div
-            style={{
-                flex: `0 0 ${notebookBrowserBasis}`,
-                minWidth: 0,
-                overflow: "hidden",
-            }}
-        >
+        {!notebookBrowserCollapsed && (
+
+<div
+    style={{
+        flex: `0 0 ${ notebookBrowserBasis}`,
+        minWidth: 0,
+        overflow: "hidden",
+    }}
+>
             
             {/* ================= SIDEBAR ================= */}
             <NotebookBrowser
@@ -133,12 +133,12 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
                 onRemoveNotebookFromFolder={handleRemoveNotebookFromFolder}
                 onDeleteFolder={handleDeleteFolder}
 
-                
+                collapsed={notebookBrowserCollapsed}
                 onCollapseChange={setNotebookBrowserCollapsed}
                 />
                 
             </div>
-
+        )}
             {/* ================= MAIN EDITOR ================= */}
             <main
                 style={{
@@ -165,25 +165,63 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
                             alignSelf: "flex-start",
                         }}
                     >
-                        {/* PAGE TITLE */}
-                        <input
-                            type="text"
-                            value={selectedPage?.title ?? ""}
-                            onChange={(e) =>
-                                handlePageTitleChange(e.target.value)
-                            }
-                            placeholder="Untitled Page"
+
+                        {/* TITLE ROW — toggle button on the same line as the title */}
+                        <div
                             style={{
-                                width: "100%",
-                                boxSizing: "border-box",
-                                fontSize: "clamp(1.5rem, 5vw, 2.5rem)",
-                                fontWeight: "bold",
-                                border: "none",
-                                outline: "none",
-                                background: "transparent",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
                                 marginBottom: "12px",
                             }}
-                        />
+                        >
+                            <Tooltip text={notebookBrowserCollapsed ? "Expand Notebooks" : "Collapse Notebooks"}>
+                                <button
+                                    className="browser-panel-toggle"
+                                    onClick={() =>
+                                        setNotebookBrowserCollapsed((c) => !c)
+                                    }
+                                    aria-label="Toggle notebooks panel"
+                                    style={{
+                                        flexShrink: 0,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "32px",
+                                        height: "32px",
+                                        padding: 0,
+                                        lineHeight: 0,
+                                    }}
+                                >
+                                    {notebookBrowserCollapsed ? (
+                                        <NotebookTabs size={18} />
+                                    ) : (
+                                        <PanelLeft size={18} />
+                                    )}
+                                </button>
+                            </Tooltip>
+
+                            {/* PAGE TITLE */}
+                            <input
+                                type="text"
+                                value={selectedPage?.title ?? ""}
+                                onChange={(e) =>
+                                    handlePageTitleChange(e.target.value)
+                                }
+                                placeholder="Untitled Page"
+                                style={{
+                                    flex: 1,
+                                    minWidth: 0,
+                                    boxSizing: "border-box",
+                                    fontSize: "clamp(1.5rem, 5vw, 2.5rem)",
+                                    fontWeight: "bold",
+                                    lineHeight: 1.2,
+                                    border: "none",
+                                    outline: "none",
+                                    background: "transparent",
+                                }}
+                            />
+                        </div>
 
                         {/* META */}
                         <p style={{ color: "#777", marginBottom: "24px" }}>
@@ -244,6 +282,7 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
                                         + Add Task Block
                                     </button>
                                 </Tooltip>
+
 
                                 {showTaskPicker && (
                                     <div

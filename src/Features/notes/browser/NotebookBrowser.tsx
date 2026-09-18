@@ -40,7 +40,8 @@ interface NotebookBrowserProps
     onAssignNotebookToFolder: (notebookId: string, folderId: string) => void;
     onRemoveNotebookFromFolder: (notebookId: string) => void;
     
-    onCollapseChange?: (collapsed: boolean) => void;
+    onCollapseChange: (collapsed: boolean) => void;
+    collapsed: boolean;
 }
 
 
@@ -74,7 +75,7 @@ export default function NotebookBrowser(
     onRemoveNotebookFromFolder,
 
     onCollapseChange,
-    
+    collapsed
 }: NotebookBrowserProps)
 
 {
@@ -96,7 +97,7 @@ const [editingPageTitle, setEditingPageTitle] =
 const [editingTitle, setEditingTitle] =
     useState("");
 
-const [collapsed, setCollapsed] = useState(false);
+
 
 const [showAddExistingPopup, setShowAddExistingPopup] = useState(false);
 
@@ -452,13 +453,7 @@ function startEditingNotebook(notebook: Notebook)
                 <Tooltip text={collapsed ? "Expand Notebooks" : "Collapse Notebooks"}>
                     <button
                         className="browser-panel-toggle"
-                        onClick={() =>  {
-                                setCollapsed((c) => {
-                                const next = !c;
-                                onCollapseChange?.(next);
-                                return next;
-                                        });
-                                         }}
+                       onClick={() => onCollapseChange(!collapsed)}
                         aria-label="Toggle notebooks panel"
                     >
                         {collapsed ? <NotebookTabs size={18} /> : <PanelLeft size={18} />}
