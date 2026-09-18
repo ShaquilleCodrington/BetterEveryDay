@@ -86,12 +86,12 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
 
 
     return (
-        <div
+        <div className="glass-panel"
             style={{
                 display: "flex",
                 height: "100%",
                 minHeight: 0,
-                backgroundColor: "rgba(20, 12, 55, 0.38)",
+               
             }}
         >
             
@@ -151,15 +151,13 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
                 }}
             >
                 {selectedPage ? (
-                    <div
+                    <div className="glass-panel"
                         style={{
                             width: "95%",
                             maxWidth: "100%",
                             boxSizing: "border-box",
-                            backgroundColor: "rgba(20, 12, 55, 0.38)",
-                            borderRadius: "10px",
                             padding: "clamp(16px, 4vw, 48px)",
-                            minHeight: "900px",
+                            minHeight: 0,
                             display: "flex",
                             flexDirection: "column",
                             alignSelf: "flex-start",
