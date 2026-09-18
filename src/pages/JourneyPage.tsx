@@ -640,10 +640,12 @@ const journeyBrowserBasis =
 
     return (
 
-        <div className="glass-panel"
+        <div 
             style={{
                 display:"flex",
-                minHeight:"100vh",
+                minHeight:"0",
+                height: "100%",
+                background: "var(--bg-panel)",
                
             }}
         >
@@ -731,6 +733,7 @@ const journeyBrowserBasis =
                 style={{
                     flex:1,
                     minWidth: 0,
+                    minHeight: 0,
                     display:"flex",
                     justifyContent:"center",
                     padding:"clamp(12px, 4vw, 40px)",
@@ -749,6 +752,7 @@ const journeyBrowserBasis =
                 minHeight: 0,
                 display: "flex",
                 flexDirection: "column",
+                alignSelf: "flex-start",
             }}
         >
 

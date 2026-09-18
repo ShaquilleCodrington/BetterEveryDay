@@ -86,11 +86,13 @@ const notebookBrowserBasis =  notebookBrowserCollapsed
 
 
     return (
-        <div className="glass-panel"
+        <div 
             style={{
                 display: "flex",
                 height: "100%",
                 minHeight: 0,
+                background: "var(--bg-panel)",
+               
                
             }}
         >
