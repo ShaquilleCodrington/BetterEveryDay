@@ -21,6 +21,7 @@ import BlockList from "../Features/notes/editor/BlockList";
 import StartSessionPopup from "../Features/journey/Session/StartSessionPopup";
 import JourneyOverview from "../Features/journey/Utils/JourneyOverview";
 import { useSearchParams } from "react-router-dom";
+import { Road, PanelLeft } from "lucide-react";
 import
 {
     type JourneySession, 
@@ -628,12 +629,7 @@ const [journeyBrowserCollapsed, setJourneyBrowserCollapsed] =
     useState(false);
 
 
-const journeyBrowserBasis =
-    journeyBrowserCollapsed
-        ? "10%"
-        : "22%";
-
-
+const journeyBrowserBasis = "22%";
     // ======================================================
     // RENDER
     // ======================================================
@@ -650,6 +646,7 @@ const journeyBrowserBasis =
             }}
         >
 
+    {!journeyBrowserCollapsed && (
         <div
             style={{
                 flex: `0 0 ${journeyBrowserBasis}`,
@@ -723,10 +720,12 @@ const journeyBrowserBasis =
     }
     onAssignNotebookToFolder={ handleAssignNotebookToFolder}
 
+    collapsed={journeyBrowserCollapsed}
     onCollapseChange={setJourneyBrowserCollapsed}
 
 />
 </div >
+)}
 
 
             <main 
@@ -755,6 +754,40 @@ const journeyBrowserBasis =
                 alignSelf: "flex-start",
             }}
         >
+            {/* TITLE ROW — toggle button on the same line as the title */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                            }}
+                        > 
+                        <Tooltip text={journeyBrowserCollapsed ? "Expand Journeys" : "Collapse Journeys"}>
+                                <button
+                                    className="browser-panel-toggle"
+                                    onClick={() =>
+                                        setJourneyBrowserCollapsed((c) => !c)
+                                    }
+                                    aria-label="Toggle journeys panel"
+                                    style={{
+                                        flexShrink: 0,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "32px",
+                                        height: "32px",
+                                        padding: 0,
+                                        lineHeight: 0,
+                                    }}
+                                >
+                                    {journeyBrowserCollapsed ? (
+                                        <Road size={18} />
+                                    ) : (
+                                        <PanelLeft size={18} />
+                                    )}
+                                </button>
+                            </Tooltip>
+                                        </div>
 
                         {/* PAGE TITLE */}
                            

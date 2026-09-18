@@ -64,7 +64,8 @@ onRemoveNotebookFromFolder:
     notebookId:string
 ) => void;
 
-onCollapseChange?: (collapsed: boolean) => void;
+collapsed: boolean;
+onCollapseChange: (collapsed: boolean) => void;
 }
 
 
@@ -97,6 +98,8 @@ export default function JourneyBrowser(
     onAssignNotebookToFolder,
     onRemoveNotebookFromFolder,
 
+    
+    collapsed,
     onCollapseChange,
 
 }: JourneyBrowserProps)
@@ -135,8 +138,6 @@ export default function JourneyBrowser(
     const [sortDirection, setSortDirection] =
         useState<SortDirection>("desc");
 
-     const [collapsed, setCollapsed] =
-        useState(false);
 
 
     const sortFieldOptions =
@@ -449,7 +450,7 @@ const looseJourneys =
 
                             backgroundColor:
                                 isSelected
-                                ? "rgba(20,12,55,0.38)"
+                                ? "rgba(20,12,55,0.98)"
                                 : "transparent",
                         }}
                     >
@@ -615,7 +616,7 @@ const looseJourneys =
 
                                                         backgroundColor:
                                                             isSelectedPage
-                                                            ? "rgba(20,12,55,0.38)"
+                                                            ? "rgba(20,12,55,0.68)"
                                                             : "transparent",
                                                     }}
                                                 >
@@ -720,13 +721,7 @@ const looseJourneys =
                 <Tooltip text={collapsed ? "Expand Journeys" : "Collapse Journeys"}>
                     <button
                         className="browser-panel-toggle"
-                        onClick={() => {
-                                    setCollapsed((c) => {
-                                        const next = !c;
-                                        onCollapseChange?.(next);
-                                        return next;
-                                    });
-                                }}
+                        onClick={() =>onCollapseChange(!collapsed)}
                         aria-label="Toggle journeys panel"
                     >
                         {collapsed ? <Road size={18} /> : <PanelLeft size={18} />}
