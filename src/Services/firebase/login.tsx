@@ -66,6 +66,26 @@ export default function LoginScreen({
     if (showCreateAccount) {
         return (
             <div className="firebase-login">
+                <div className="login-page">
+                    <div className="login-brand">
+                        <div className="better-every-day">
+                            BetterEveryDay
+                        </div>
+
+                        <img
+                            src="/BetterEveryDayLogo.png"
+                            alt="BetterEveryDay"
+                            className="login-logo"
+                        />
+
+                        <div className="login-brand-info">
+                            {/* Additional BetterEveryDay information will go here. */}
+                        </div>
+                    </div>
+
+
+                   <div className="login-panel">
+                    <h1>Login</h1>
                 <div className="glass-panel">
                     <h1>Create Account</h1>
 
@@ -165,26 +185,44 @@ export default function LoginScreen({
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
         );
     }
 
     return (
         <div className="firebase-login">
-            <SignInAuthScreen />
+             <div className="login-page">
+                <div className="login-logo-container">
+    <img
+        src="/BetterEveryDayLogo.png"
+        alt="BetterEveryDay"
+        className="login-logo"
+    />
+</div>
 
-            <button
-                type="button"
-                onClick={() => setShowCreateAccount(true)}
-            >
-                Create Account
-            </button>
+<div className="login-content">
+    <h1>Login</h1>
 
-            <button
-                type="button"
-                onClick={onGuest}
-            >
-                Continue as Guest
-            </button>
-        </div>
+    <SignInAuthScreen />
+
+    <div className="login-actions">
+        <button
+            type="button"
+            onClick={() => setShowCreateAccount(true)}
+        >
+            Create Account
+        </button>
+
+        <button
+            type="button"
+            onClick={onGuest}
+        >
+            Continue as Guest
+        </button>
+    </div>
+</div>
+</div>
+</div>
     );
 }

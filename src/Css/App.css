@@ -1722,3 +1722,152 @@
 .context-help-popup-body > * + * {
   margin-top: var(--space-lg);
 }
+
+.firebase-login {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+.login-page {
+    
+    position: relative;
+
+    width: 100vw;
+    min-height: 100vh;
+
+    padding: 40px;
+    box-sizing: border-box;
+  
+}
+
+.login-panel {
+     width: 50%;
+    max-width: 50%;
+    height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+    padding: 60px ;
+    box-sizing: border-box;
+}
+
+.login-brand {
+    width: 50%;
+    max-width: 50%;
+    height: 100vh;
+     display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 60px;
+    box-sizing: border-box;
+
+    overflow: hidden;
+}
+
+.login-logo-container {
+    position: absolute;
+
+    top: 40px;
+    left: 40px;
+
+    width: clamp(140px, 20vw, 270px);
+
+    box-sizing: border-box;
+}
+
+.login-logo {
+    display: block;
+   
+    width: 100%;
+    height: auto;
+
+    object-fit: contain;
+}
+
+.better-every-day {
+    width: 100%;
+
+    text-align: center;
+
+    margin-bottom: 36px;
+
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+
+.login-content .fui-screen {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+}
+
+.login-content > .glass-panel {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-lg);
+}
+/* Firebase's sign-in card is capped at 24rem and auto-centered by default;
+   this lets it fill the panel instead. */
+.login-panel .fui-screen {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+}
+
+/* Same width for the custom Create Account card. */
+.login-panel > .glass-panel {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-lg);
+}
+
+.login-actions {
+    display: flex;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.login-actions button {
+    flex: 1;
+}
+
+
+.login-content {
+    width: min(500px, 90vw);
+
+    position: absolute;
+
+    left: 50%;
+    top: 58%;
+
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    box-sizing: border-box;
+}
+
+.login-content h1 {
+    margin-bottom: var(--space-lg);
+}
+
+
+.login-actions {
+    display: flex;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.login-actions button {
+    flex: 1;
+}
