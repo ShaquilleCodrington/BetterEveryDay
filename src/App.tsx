@@ -53,6 +53,7 @@ import JourneyPage from "./pages/JourneyPage";
 import ProfilePage from "./pages/ProfilePage";
 import HelpPage from "./pages/HelpPage";
 import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
+import InvoicePage from "./pages/InvoicePage.tsx";
 import "./Css/App.css";
 
 type AuthStatus = | "loading" |"login" ;
@@ -167,6 +168,7 @@ function MainApplication(
         <Route path="/planning" element={<PlanningPage />} />
         <Route path="/recharge" element={<RechargePage />} />
         <Route path="/congruence" element={<CongruencePage />} />
+        <Route path="/invoice" element={<InvoicePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/settings/appearance"
