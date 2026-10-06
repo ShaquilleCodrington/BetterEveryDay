@@ -689,10 +689,11 @@
 
 /* Responsive heading typography */
 .block-heading-input {
-  font-size: clamp(
-    var(--font-size-base),
-    2.5vw,
-    1.6rem
+  font-size: max(
+    var(--font-size-input-touch),
+    clamp( var(--font-size-base),
+    2.5vw, 1.6rem)
+  
   );
 
   font-weight: 600;

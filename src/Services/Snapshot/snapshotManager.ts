@@ -34,15 +34,15 @@ import {
 
 const SYNC_BASELINE_KEY = "lastSyncedIds";
 
-// Mass-deletion safeguard.
+// Mass-deletion safeguard, new rule (replaces the old 50% rule).
 //
-// If a sync would remove more than this share of a
-// collection's baseline IDs, the deletions are rejected
+// If a sync would leave a collection with LESS than 20% of its
+// baseline items, the deletions for that collection are rejected
 // and everything is kept (the original safe union).
 //
-// Collections smaller than MIN_ITEMS_FOR_GUARD are exempt,
-// otherwise deleting 2 of 3 items would be blocked.
-const MAX_DELETION_RATIO = 0.5;
+// Collections with fewer than MIN_ITEMS_FOR_GUARD baseline items
+// are exempt, so users can always delete freely from small lists.
+const MIN_REMAINING_RATIO = 0.2;
 const MIN_ITEMS_FOR_GUARD = 5;
 
 export interface SyncBaseline {
@@ -133,6 +133,43 @@ export function loadSyncBaseline(
     }
 }
 
+
+// 10/06/2026: Use the baseline passed in options. If none was passed
+// (undefined), load the saved one. An explicit null means "no baseline".
+function resolveBaseline(
+    userId: string,
+    options: ReconcileOptions
+): SyncBaseline | null {
+    if (options.baseline !== undefined) {
+        return options.baseline;
+    }
+
+    return loadSyncBaseline(userId);
+}
+
+// 10/06/2026: The new safeguard check, shared by both reconcile functions.
+// True when the sync would leave less than 20% of the baseline items.
+function isMassDelete(
+    baselineCount: number,
+    deletedCount: number,
+    allowMassDelete: boolean
+): boolean {
+    if (allowMassDelete) {
+        return false;
+    }
+
+    // Under 5 items the rule is not used.
+    if (baselineCount < MIN_ITEMS_FOR_GUARD) {
+        return false;
+    }
+
+    const remainingRatio =
+        (baselineCount - deletedCount) / baselineCount;
+
+    return remainingRatio < MIN_REMAINING_RATIO;
+}
+
+
 // 2026-08-25 — Rebuild the current Snapshot from the latest local state, save it locally, and hand it to the Sync Manager.
 export async function processCurrentSnapshot(userId?: string): Promise<Snapshot | null>
 {
@@ -220,15 +257,13 @@ function reconcileCollection<T extends { id: string; updatedAt: string }>(
         }
     }
 
-    const deletionRatio =
-        baselineIds.length > 0
-            ? deletedIds.size / baselineIds.length
-            : 0;
-
-    const massDeleteDetected =
-        baselineIds.length >= MIN_ITEMS_FOR_GUARD &&
-        deletionRatio > MAX_DELETION_RATIO &&
-        !allowMassDelete;
+    // 10/06/2026: Was a 50% deletion ratio. Now: reject if under 20% would remain.
+   const massDeleteDetected =
+        isMassDelete(
+            baselineIds.length,
+            deletedIds.size,
+            allowMassDelete
+        );
 
     const resolvedItems: T[] = [];
 
@@ -314,17 +349,13 @@ function reconcileJourneyCollection(
             deletedIds.add(journeyId);
         }
     }
-
-    const deletionRatio =
-        baselineIds.length > 0
-            ? deletedIds.size / baselineIds.length
-            : 0;
-
+ // 10/06/2026: Was a 50% deletion ratio. Now: reject if under 20% would remain.
     const massDeleteDetected =
-        baselineIds.length >= MIN_ITEMS_FOR_GUARD &&
-        deletionRatio > MAX_DELETION_RATIO &&
-        !allowMassDelete;
-
+        isMassDelete(
+            baselineIds.length,
+            deletedIds.size,
+            allowMassDelete
+        );
     const resolvedJourneys: Snapshot["journeys"] = [];
 
     for (const journeyId of allIds) {
@@ -376,11 +407,25 @@ function reconcileJourneyCollection(
 //
 // This function performs reconciliation only.
 // It does not communicate with Firebase.
+//
+// 10/06/2026: Now takes options and passes the sync baseline into every
+// collection, so deletions are detected instead of always merging.
 export function reconcileSnapshots(
     localSnapshot: Snapshot,
-    cloudSnapshot: Snapshot
+    cloudSnapshot: Snapshot,
+    options: ReconcileOptions = {}
 ): Snapshot
 {
+    // 10/06/2026: Baseline + safeguard override for this reconcile.
+    const baseline =
+        resolveBaseline(
+            localSnapshot.userId,
+            options
+        );
+
+    const allowMassDelete =
+        options.allowMassDelete ?? false;
+
     const resolvedProfile =
     localSnapshot.profileUpdatedAt >=
     cloudSnapshot.profileUpdatedAt
@@ -407,46 +452,61 @@ const resolvedProfileUpdatedAt =
     profileUpdatedAt:
         resolvedProfileUpdatedAt,
 
+        // 10/06/2026: baseline IDs + allowMassDelete added to each collection below.
         tasks:
             reconcileCollection(
                 localSnapshot.tasks,
-                cloudSnapshot.tasks
+                cloudSnapshot.tasks,
+                baseline?.tasks,
+                allowMassDelete
             ),
 
         pages:
             reconcileCollection(
                 localSnapshot.pages,
-                cloudSnapshot.pages
+                cloudSnapshot.pages,
+                baseline?.pages,
+                allowMassDelete
             ),
 
         blocks:
             reconcileCollection(
                 localSnapshot.blocks,
-                cloudSnapshot.blocks
+                cloudSnapshot.blocks,
+                baseline?.blocks,
+                allowMassDelete
             ),
 
         notebooks:
             reconcileCollection(
                 localSnapshot.notebooks,
-                cloudSnapshot.notebooks
+                cloudSnapshot.notebooks,
+                baseline?.notebooks,
+                allowMassDelete
             ),
 
         notebookFolders:
             reconcileCollection(
                 localSnapshot.notebookFolders,
-                cloudSnapshot.notebookFolders
+                cloudSnapshot.notebookFolders,
+                baseline?.notebookFolders,
+                allowMassDelete
             ),
 
         journeys:
             reconcileJourneyCollection(
                 localSnapshot.journeys,
-                cloudSnapshot.journeys
+                cloudSnapshot.journeys,
+                baseline?.journeys,
+                allowMassDelete
             ),
 
         journeyFolders:
             reconcileCollection(
                 localSnapshot.journeyFolders,
-                cloudSnapshot.journeyFolders
+                cloudSnapshot.journeyFolders,
+                baseline?.journeyFolders,
+                allowMassDelete
             ),
 
         updatedAt:
@@ -461,10 +521,25 @@ const resolvedProfileUpdatedAt =
 // application's local storage collections.
 //
 // This function performs local storage work only.
+//
+// 10/06/2026: Now takes options and uses the baseline when merging into
+// local storage. Before, this step was a plain union, so anything the
+// reconcile step deleted was added straight back from local storage.
 export async function restoreSnapshotToLocalStorage(
-    snapshot: Snapshot
+    snapshot: Snapshot,
+    options: ReconcileOptions = {}
 ): Promise<Snapshot>
 {
+    // 10/06/2026: Same baseline + safeguard override as the reconcile step.
+    const baseline =
+        resolveBaseline(
+            snapshot.userId,
+            options
+        );
+
+    const allowMassDelete =
+        options.allowMassDelete ?? false;
+
     const currentTasks =
         loadTasks();
 
@@ -487,46 +562,61 @@ export async function restoreSnapshotToLocalStorage(
         loadBlocks();
 
 
+    // 10/06/2026: baseline IDs + allowMassDelete added to each collection below.
     const restoredTasks =
         reconcileCollection(
             currentTasks,
-            snapshot.tasks
+            snapshot.tasks,
+            baseline?.tasks,
+            allowMassDelete
         );
 
     const restoredNotebookFolders =
         reconcileCollection(
             currentNotebookFolders,
-            snapshot.notebookFolders
+            snapshot.notebookFolders,
+            baseline?.notebookFolders,
+            allowMassDelete
         );
 
     const restoredNotebooks =
         reconcileCollection(
             currentNotebooks,
-            snapshot.notebooks
+            snapshot.notebooks,
+            baseline?.notebooks,
+            allowMassDelete
         );
 
     const restoredJourneyFolders =
         reconcileCollection(
             currentJourneyFolders,
-            snapshot.journeyFolders
+            snapshot.journeyFolders,
+            baseline?.journeyFolders,
+            allowMassDelete
         );
 
     const restoredJourneys =
         reconcileJourneyCollection(
             currentJourneys,
-            snapshot.journeys
+            snapshot.journeys,
+            baseline?.journeys,
+            allowMassDelete
         );
 
     const restoredPages =
         reconcileCollection(
             currentPages,
-            snapshot.pages
+            snapshot.pages,
+            baseline?.pages,
+            allowMassDelete
         );
 
     const restoredBlocks =
         reconcileCollection(
             currentBlocks,
-            snapshot.blocks
+            snapshot.blocks,
+            baseline?.blocks,
+            allowMassDelete
         );
 
 
@@ -608,15 +698,19 @@ export async function restoreSnapshotToLocalStorage(
 //
 // The Sync Manager is responsible for retrieving the cloud
 // Snapshot and pushing the returned resolved Snapshot.
+//
+// 10/06/2026: Options are passed through to both steps.
 export async function reconcileAndRestoreSnapshot(
     localSnapshot: Snapshot,
-    cloudSnapshot: Snapshot
+    cloudSnapshot: Snapshot,
+    options: ReconcileOptions = {}
 ): Promise<Snapshot>
 {
     const resolvedSnapshot =
         reconcileSnapshots(
             localSnapshot,
-            cloudSnapshot
+            cloudSnapshot,
+            options
         );
 
     saveCurrentSnapshot(
@@ -625,7 +719,8 @@ export async function reconcileAndRestoreSnapshot(
 
     const restoredSnapshot =
         await restoreSnapshotToLocalStorage(
-            resolvedSnapshot
+            resolvedSnapshot,
+            options
         );
 
     return restoredSnapshot;

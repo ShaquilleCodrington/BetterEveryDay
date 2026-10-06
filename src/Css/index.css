@@ -102,6 +102,7 @@
   --font-size-h2:     16px;
   --font-size-h3:     13px;
   --font-size-logo:   11px;
+  --font-size-input-touch: 16px;
 
   /* ── Shadows ────────────────────────────────────────────────────────────*/
   --shadow-panel:     0 8px 32px rgba(0, 0, 0, 0.35);
@@ -141,6 +142,8 @@ body {
   overflow: hidden;
   /* transparent so the fixed canvas shows through */
   background: var(--bg-base);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* ── Reset elements ─────────────────────────────────────────────────────── */
@@ -188,6 +191,12 @@ input:focus, select:focus, textarea:focus {
   background: var(--bg-input-focus);
   border-color: var(--border-input-focus);
   box-shadow: 0 0 0 3px var(--accent-glow-input);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  :is(input, select, textarea, [contenteditable="true"]):not(.timer-input, .timer-unit-input, .block-heading-input) {
+    font-size: var(--font-size-input-touch) !important;
+  }
 }
 
 select option { background: #0f0a28; color: var(--text-base); }
