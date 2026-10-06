@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import type { Task } from "../Data/tasks";
+import type { ChecklistItem } from "../Components/Checklist";
+import TaskCard from "../Components/TaskCard";
+import EditTaskPopup from "../Components/EditTaskPopup";
 import {
   changeCalendarMonth,
   getCalendarMonthDays,
@@ -16,7 +19,12 @@ import type {
 type CalendarPageProps = {
   tasks: Task[];
   calendarEvents: CalendarEvent[];
-  onOpenTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  onEditTask: (task: Task) => void;
+  onChecklistChange: (
+    taskId: string,
+    items: ChecklistItem[]
+  ) => void;
 };
 
 const MAX_VISIBLE_EVENTS = 3;
@@ -34,13 +42,18 @@ const WEEKDAY_LABELS = [
 export default function CalendarPage({
   tasks,
   calendarEvents,
-  onOpenTask,
+  onDeleteTask,
+  onEditTask,
+  onChecklistChange,
 }: CalendarPageProps) {
   const [calendarMonth, setCalendarMonth] =
     useState<CalendarMonth>(getCurrentCalendarMonth);
 
   const [selectedDate, setSelectedDate] =
     useState<CalendarDate | null>(null);
+
+  const [editingTask, setEditingTask] =
+    useState<Task | null>(null);
 
   const calendarDays = useMemo(
     () => getCalendarMonthDays(calendarMonth),
@@ -56,17 +69,14 @@ export default function CalendarPage({
   // badge count, the chips, and the selected-day list always agree.
   const eventsByDate = useMemo(
     () =>
-       groupCalendarEventsByDate(
-      calendarEvents.filter((calendarEvent) =>
-        tasksById.has(calendarEvent.taskId)
+      groupCalendarEventsByDate(
+        calendarEvents.filter((calendarEvent) =>
+          tasksById.has(calendarEvent.taskId)
+        ),
+        tasks
       ),
-      tasks
-    ),
-  [calendarEvents, tasks, tasksById]
-);
-
-  const getTaskTitle = (taskId: string): string =>
-    tasksById.get(taskId)?.title ?? "";
+    [calendarEvents, tasks, tasksById]
+  );
 
   const selectedEvents = selectedDate
     ? eventsByDate.get(selectedDate) ?? []
@@ -116,16 +126,28 @@ export default function CalendarPage({
 
       <div className="calendar-page__grid">
         {calendarDays.map((calendarDay) => {
-          const dateEvents = eventsByDate.get(calendarDay.date) ?? [];
-          const visibleEvents = dateEvents.slice(0, MAX_VISIBLE_EVENTS);
-          const hiddenEventCount = dateEvents.length - visibleEvents.length;
-          const isSelected = calendarDay.date === selectedDate;
+          const dateEvents =
+            eventsByDate.get(calendarDay.date) ?? [];
+
+          const visibleEvents = dateEvents.slice(
+            0,
+            MAX_VISIBLE_EVENTS
+          );
+
+          const hiddenEventCount =
+            dateEvents.length - visibleEvents.length;
+
+          const isSelected =
+            calendarDay.date === selectedDate;
 
           const dayClassName = [
             "calendar-page__day",
-            !calendarDay.isCurrentMonth && "calendar-page__day--outside",
-            calendarDay.isToday && "calendar-page__day--today",
-            isSelected && "calendar-page__day--selected",
+            !calendarDay.isCurrentMonth &&
+              "calendar-page__day--outside",
+            calendarDay.isToday &&
+              "calendar-page__day--today",
+            isSelected &&
+              "calendar-page__day--selected",
           ]
             .filter(Boolean)
             .join(" ");
@@ -138,14 +160,19 @@ export default function CalendarPage({
               tabIndex={0}
               aria-pressed={isSelected}
               className={dayClassName}
-              onClick={() => setSelectedDate(calendarDay.date)}
+              onClick={() =>
+                setSelectedDate(calendarDay.date)
+              }
               onKeyDown={(event) => {
                 // Ignore keys pressed on a title chip inside the day.
                 if (event.target !== event.currentTarget) {
                   return;
                 }
 
-                if (event.key === "Enter" || event.key === " ") {
+                if (
+                  event.key === "Enter" ||
+                  event.key === " "
+                ) {
                   event.preventDefault();
                   setSelectedDate(calendarDay.date);
                 }
@@ -163,18 +190,24 @@ export default function CalendarPage({
 
               {dateEvents.length > 0 && (
                 <div className="calendar-page__day-events">
-                  {visibleEvents.map((calendarEvent) => (
-                    <button
-                      key={calendarEvent.id}
-                      className="calendar-page__event"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onOpenTask(calendarEvent.taskId);
-                      }}
-                    >
-                      {getTaskTitle(calendarEvent.taskId)}
-                    </button>
-                  ))}
+                  {visibleEvents.map((calendarEvent) => {
+                    const task = tasksById.get(
+                      calendarEvent.taskId
+                    );
+
+                    if (!task) {
+                      return null;
+                    }
+
+                    return (
+                      <span
+                        key={calendarEvent.id}
+                        className="calendar-page__event"
+                      >
+                        {task.title}
+                      </span>
+                    );
+                  })}
 
                   {hiddenEventCount > 0 && (
                     <span className="calendar-page__more">
@@ -191,7 +224,9 @@ export default function CalendarPage({
       {selectedDate && (
         <div className="calendar-page__selected-date">
           <h2>
-            {parseCalendarDate(selectedDate).toLocaleDateString(undefined, {
+            {parseCalendarDate(
+              selectedDate
+            ).toLocaleDateString(undefined, {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -201,16 +236,47 @@ export default function CalendarPage({
           {selectedEvents.length === 0 ? (
             <p>No tasks on this day.</p>
           ) : (
-            selectedEvents.map((calendarEvent) => (
-              <button
-                key={calendarEvent.id}
-                onClick={() => onOpenTask(calendarEvent.taskId)}
-              >
-                {getTaskTitle(calendarEvent.taskId)}
-              </button>
-            ))
+            selectedEvents.map((calendarEvent) => {
+              const task = tasksById.get(
+                calendarEvent.taskId
+              );
+
+              if (!task) {
+                return null;
+              }
+
+              return (
+                <TaskCard
+                  key={task.id}
+                  {...task}
+                  onDelete={() =>
+                    onDeleteTask(task.id)
+                  }
+                  onEdit={() =>
+                    setEditingTask(task)
+                  }
+                  onChecklistChange={(items) =>
+                    onChecklistChange(
+                      task.id,
+                      items
+                    )
+                  }
+                />
+              );
+            })
           )}
         </div>
+      )}
+
+      {editingTask && (
+        <EditTaskPopup
+          task={editingTask}
+          onSave={(updatedTask) => {
+            onEditTask(updatedTask);
+            setEditingTask(null);
+          }}
+          onClose={() => setEditingTask(null)}
+        />
       )}
     </section>
   );

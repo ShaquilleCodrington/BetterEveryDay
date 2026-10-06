@@ -35,7 +35,7 @@ import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
 import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/connector";
 
-import { Routes, Route, Outlet, useNavigate } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
 import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
@@ -61,7 +61,8 @@ import {
   loadCalendarEvents,
   saveCalendarEvents,
 } from "./Features/Calendar/calendarStorage";
-import { loadTasks } from "./Data/taskStorage";
+import { loadTasks, saveTasks } from "./Data/taskStorage";
+import type { ChecklistItem } from "./Components/Checklist";
 import type { Task } from "./Data/tasks";
 import "./Css/App.css";
 
@@ -268,45 +269,82 @@ function handleSidebarToggle() {
   );
 }
 function CalendarRoute() {
-  const navigate = useNavigate();
+  // Tasks are read when the Calendar route opens.
+  const [tasks, setTasks] = useState<Task[]>(
+    () => loadTasks()
+  );
 
-  // 10/05/2026: Tasks are read once when the Calendar page opens.
-  const [tasks] = useState<Task[]>(() => loadTasks());
-
-  // 10/05/2026: Calendar events load from their own storage key.
+  // Calendar events load from their own storage key.
   const [calendarEvents, setCalendarEvents] =
     useState<CalendarEvent[]>(loadCalendarEvents);
 
-  // 10/05/2026: Tasks with a valid due date and no event get one.
+  // Task changes made from Calendar use the same task state
+  // that the Calendar page is displaying.
+  useEffect(() => {
+    saveTasks(tasks);
+  }, [tasks]);
+
+  // Tasks with a valid due date and no event get one.
   // createCalendarEventsFromTasks returns the same array when nothing
   // is new, so this does not re-render in a loop.
   useEffect(() => {
     setCalendarEvents((currentEvents) =>
-      createCalendarEventsFromTasks(tasks, currentEvents)
+      createCalendarEventsFromTasks(
+        tasks,
+        currentEvents
+      )
     );
   }, [tasks]);
 
-  // 10/05/2026: Persist whenever the events change.
+  // Persist whenever the calendar events change.
   useEffect(() => {
     saveCalendarEvents(calendarEvents);
   }, [calendarEvents]);
 
-  // 10/05/2026: Opening a task goes to the existing task page. The task id
-  // travels in router state so TaskListPage can expand that card later.
-  // Until TaskListPage reads it, the user simply lands on the task list.
-  function handleOpenTask(taskId: string) {
-    navigate("/task", { state: { openTaskId: taskId } });
+  function handleDeleteTask(taskId: string) {
+    setTasks((prevTasks) =>
+      prevTasks.filter(
+        (task) => task.id !== taskId
+      )
+    );
+  }
+
+  function handleEditTask(updatedTask: Task) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === updatedTask.id
+          ? updatedTask
+          : task
+      )
+    );
+  }
+
+  function handleChecklistChange(
+    taskId: string,
+    items: ChecklistItem[]
+  ) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              checklist: items,
+            }
+          : task
+      )
+    );
   }
 
   return (
     <CalendarPage
       tasks={tasks}
       calendarEvents={calendarEvents}
-      onOpenTask={handleOpenTask}
+      onDeleteTask={handleDeleteTask}
+      onEditTask={handleEditTask}
+      onChecklistChange={handleChecklistChange}
     />
   );
 }
-
 
 function App() {
   return <AuthGate />;
