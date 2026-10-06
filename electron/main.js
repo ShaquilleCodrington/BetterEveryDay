@@ -1,12 +1,26 @@
 // Import Electron modules used to control the application
 // and create native desktop windows.
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Tray, nativeImage } from "electron";
 import { createMainWindow } from "./windows/mainWindow.js";
 import { createTimerWindow } from "./windows/timerWindow.js";
 import { ipcMain, Notification, dialog } from "electron";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import pkg from "electron-updater";
+
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const iconsDir = path.join(__dirname, "icons");
+
+const appIconPath =
+  process.platform === "win32"
+    ? path.join(iconsDir, "icon.ico")
+    : path.join(iconsDir, "icon.png");
+
+// Windows: must match build.appId so the taskbar groups and shows the right icon.
+app.setAppUserModelId("com.bettereveryday.app");
+
 const { autoUpdater } = pkg;
     // Profile data persistence
     // ------------------------------------------------------
@@ -22,11 +36,6 @@ const { autoUpdater } = pkg;
     // This is what shows up as the sender name on notifications (instead
     // of the generic "Electron"), in the taskbar, and in userData paths.
     app.setName("BetterEveryDay");
-
-    // Windows groups notifications (and shows the app name on them) by
-    // this id. Without it, Windows toasts fall back to a generic
-    // "Electron" label instead of the app's own name.
-    app.setAppUserModelId("BetterEveryDay");
 
 function setupAutoUpdater()
     {

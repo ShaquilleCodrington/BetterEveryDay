@@ -2,7 +2,7 @@
   "name": "BetterEveryDay",
   "productName": "BetterEveryDay",
   "private": true,
-  "version": "0.0.9",
+  "version": "0.0.10",
   "type": "module",
   "main": "electron/main.js",
   "description": "A personal productivity app for tracking journeys, sessions, and tasks.",
@@ -30,13 +30,16 @@
     },
     "win": {
       "target": "nsis",
-       "icon": "public/BetterEveryDayLogo.png"
+       "icon": "build/icon.ico"
     },
+
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "publish": {
       "provider": "github",

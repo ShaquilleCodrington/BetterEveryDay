@@ -18,7 +18,9 @@ import {
 
 import { database } from "../firebase/config";
 
-
+export interface SyncOptions {
+    allowMassDelete?: boolean;
+}
 // Store each user's Continuity Snapshot
 // at one predictable Firestore location.
 function getSnapshotReference(
