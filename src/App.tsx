@@ -35,7 +35,7 @@ import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
 import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/connector";
 
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useNavigate } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
 import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
@@ -54,6 +54,15 @@ import ProfilePage from "./pages/ProfilePage";
 import HelpPage from "./pages/HelpPage";
 import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
 import InvoicePage from "./pages/InvoicePage.tsx";
+import CalendarPage from "./pages/CalendarPage";
+import { createCalendarEventsFromTasks } from "./Features/Calendar/calendar";
+import type { CalendarEvent } from "./Features/Calendar/calendar";
+import {
+  loadCalendarEvents,
+  saveCalendarEvents,
+} from "./Features/Calendar/calendarStorage";
+import { loadTasks } from "./Data/taskStorage";
+import type { Task } from "./Data/tasks";
 import "./Css/App.css";
 
 type AuthStatus = | "loading" |"login" ;
@@ -169,6 +178,7 @@ function MainApplication(
         <Route path="/recharge" element={<RechargePage />} />
         <Route path="/congruence" element={<CongruencePage />} />
         <Route path="/invoice" element={<InvoicePage />} />
+        <Route path="/calendar" element={<CalendarRoute />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/settings/appearance"
@@ -255,6 +265,45 @@ function handleSidebarToggle() {
         </div>
       </div>
     </div>
+  );
+}
+function CalendarRoute() {
+  const navigate = useNavigate();
+
+  // 10/05/2026: Tasks are read once when the Calendar page opens.
+  const [tasks] = useState<Task[]>(() => loadTasks());
+
+  // 10/05/2026: Calendar events load from their own storage key.
+  const [calendarEvents, setCalendarEvents] =
+    useState<CalendarEvent[]>(loadCalendarEvents);
+
+  // 10/05/2026: Tasks with a valid due date and no event get one.
+  // createCalendarEventsFromTasks returns the same array when nothing
+  // is new, so this does not re-render in a loop.
+  useEffect(() => {
+    setCalendarEvents((currentEvents) =>
+      createCalendarEventsFromTasks(tasks, currentEvents)
+    );
+  }, [tasks]);
+
+  // 10/05/2026: Persist whenever the events change.
+  useEffect(() => {
+    saveCalendarEvents(calendarEvents);
+  }, [calendarEvents]);
+
+  // 10/05/2026: Opening a task goes to the existing task page. The task id
+  // travels in router state so TaskListPage can expand that card later.
+  // Until TaskListPage reads it, the user simply lands on the task list.
+  function handleOpenTask(taskId: string) {
+    navigate("/task", { state: { openTaskId: taskId } });
+  }
+
+  return (
+    <CalendarPage
+      tasks={tasks}
+      calendarEvents={calendarEvents}
+      onOpenTask={handleOpenTask}
+    />
   );
 }
 

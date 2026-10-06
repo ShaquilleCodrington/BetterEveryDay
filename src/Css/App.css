@@ -1871,3 +1871,214 @@
 .login-actions button {
     flex: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CALENDAR PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 10/05/2026: Calendar panel. Also the size container: the layout reacts to
+   the calendar's own width (sidebar open/closed, Electron window size),
+   not the screen's width. */
+.calendar-page {
+  container-type: inline-size;
+  padding: var(--panel-padding);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-panel);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+  -webkit-backdrop-filter: blur(var(--blur-panel));
+  backdrop-filter: blur(var(--blur-panel));
+}
+
+/* 10/05/2026: Header, mobile first. Month title on its own row,
+   the three buttons share the row below it. */
+.calendar-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.calendar-page__header h1 {
+  order: -1;
+  flex: 1 0 100%;
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-h2);
+}
+
+.calendar-page__header button {
+  flex: 1;
+}
+
+/* 10/05/2026: Weekday row and day grid share the same 7 columns.
+   minmax(0, 1fr) stops a long task title from stretching its column. */
+.calendar-page__weekdays,
+.calendar-page__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--calendar-gap);
+}
+
+.calendar-page__weekdays {
+  margin-bottom: var(--space-xs);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-label);
+}
+
+/* 10/05/2026: One day cell. */
+.calendar-page__day {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: var(--calendar-day-min-height);
+  padding: var(--calendar-day-padding);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: var(--radius-btn);
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+.calendar-page__day:hover {
+  background: var(--bg-input-focus);
+  border-color: var(--border-panel-hover);
+}
+
+.calendar-page__day:focus-visible {
+  outline: none;
+  border-color: var(--border-input-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow-input);
+}
+
+/* 10/05/2026: Day states. Applied by CalendarPage as modifier classes. */
+.calendar-page__day--outside {
+  opacity: var(--calendar-outside-opacity);
+}
+
+.calendar-page__day--today {
+  border-color: var(--border-btn-primary);
+}
+
+.calendar-page__day--today .calendar-page__day-number {
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.calendar-page__day--selected {
+  background: var(--bg-btn-active);
+  border-color: var(--border-btn-hover);
+  box-shadow: 0 0 12px var(--accent-glow-btn-hover);
+}
+
+.calendar-page__day-number {
+  font-size: var(--font-size-sm);
+  color: var(--text-base);
+}
+
+/* 10/05/2026: Disclosure level 1 (narrow): only a count badge. */
+.calendar-page__day-count {
+  align-self: flex-start;
+  min-width: 1.4em;
+  padding: 0 5px;
+  text-align: center;
+  line-height: 1.4;
+  font-size: var(--font-size-xs);
+  color: var(--text-heading);
+  background: var(--bg-btn-primary);
+  border: 1px solid var(--border-btn-primary);
+  border-radius: 999px;
+}
+
+/* 10/05/2026: Disclosure level 2 (wide): title chips. Hidden until there is room. */
+.calendar-page__day-events {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* 10/05/2026: Title chip. Overrides the global button style (padding,
+   letter-spacing, lift on hover) so it reads as a one-line label. */
+.calendar-page__event {
+  width: 100%;
+  padding: 1px 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+  letter-spacing: 0;
+  font-size: var(--calendar-event-font-size);
+  border-radius: 4px;
+}
+
+.calendar-page__event:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.calendar-page__more {
+  font-size: var(--font-size-xs);
+  color: var(--text-faint);
+}
+
+/* 10/05/2026: Disclosure level 3: the selected day's full list, same at every width. */
+.calendar-page__selected-date {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-hr);
+}
+
+.calendar-page__selected-date h2 {
+  margin: 0;
+}
+
+.calendar-page__selected-date button {
+  width: 100%;
+  text-align: left;
+}
+
+/* 10/05/2026: Expand when the calendar itself has room (560px+).
+   Only token values and visibility change. The grid and weekday row set
+   the tokens because a container cannot restyle itself, only its children. */
+@container (min-width: 560px) {
+  .calendar-page__header {
+    flex-wrap: nowrap;
+  }
+
+  .calendar-page__header h1 {
+    order: 0;
+    flex: 1 1 auto;
+    font-size: var(--font-size-h1);
+  }
+
+  .calendar-page__header button {
+    flex: 0 0 auto;
+  }
+
+  .calendar-page__weekdays,
+  .calendar-page__grid {
+    --calendar-gap: 4px;
+    --calendar-day-padding: 6px;
+    --calendar-day-min-height: 6.5rem;
+    --calendar-event-font-size: var(--font-size-sm);
+  }
+
+  .calendar-page__day-count {
+    display: none;
+  }
+
+  .calendar-page__day-events {
+    display: flex;
+  }
+}

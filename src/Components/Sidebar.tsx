@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import Tooltip from "./Tooltip"; 
 // CHANGED: import the Lucide icons used in the nav
-import { Signpost, ListTodo, Sticker, NotebookTabs, Road, PanelLeft,FileText } from "lucide-react";
+import { Signpost, ListTodo, Sticker, NotebookTabs, Road, PanelLeft,FileText, CalendarDays } from "lucide-react";
 // CHANGED: added props so the parent (MainLayout) can control collapsed state
 
 type SidebarState = "closed" | "collapsed" | "open";
@@ -50,6 +50,13 @@ export default function Sidebar({ state, onToggle }: SidebarProps) {
           <button className="sidebar-btn">
             <ListTodo size={18} className="sidebar-btn-icon" />
             {!collapsed && <span className="sidebar-btn-label">Task List</span>}
+          </button>
+        </Link>
+
+        <Link to="/calendar">
+          <button className="sidebar-btn">
+            <CalendarDays size={18} className="sidebar-btn-icon" />
+            {!collapsed && <span className="sidebar-btn-label">Calendar</span>}
           </button>
         </Link>
 
