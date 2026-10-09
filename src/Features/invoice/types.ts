@@ -29,4 +29,5 @@ export interface InvoiceData {
 
     template: string;
     theme: InvoiceTheme;
+    updatedAt?: string;
 }

@@ -22,8 +22,11 @@ import {
 import { database } from "../firebase/config";
 
 export interface SyncOptions {
+    // 10/09/2026 — Deprecated and ignored. The mass-deletion safeguard was
+    // removed. Kept optional so existing callers still compile.
     allowMassDelete?: boolean;
 }
+
 // Store each user's Continuity Snapshot
 // at one predictable Firestore location.
 function getSnapshotReference(
@@ -60,13 +63,12 @@ export async function receiveSnapshot(
     const data =
         snapshotDocument.data() as Partial<Snapshot>;
 
-
+    // normalizeSnapshot fills in invoices: [] for older cloud Snapshots.
     const normalizedSnapshot =
         normalizeSnapshot(
             data,
             userId
         );
-
 
     return normalizedSnapshot;
 }
@@ -121,11 +123,11 @@ export async function sendSnapshot(
 // materialized into application storage, and pushed
 // back to Firebase.
 //
-// 10/06/2026: Takes SyncOptions, loads the last-sync baseline before
-// anything changes, and saves a new baseline only after a successful sync.
+// 10/06/2026: Loads the last-sync baseline before anything changes, and
+// saves a new baseline only after a successful sync.
 export async function sync(
     userId: string,
-    options: SyncOptions = {}
+    _options: SyncOptions = {}
 ): Promise<Snapshot | null> {
 
     // 10/06/2026: Load the baseline FIRST, before this sync touches anything.
@@ -134,8 +136,6 @@ export async function sync(
 
     const reconcileOptions: ReconcileOptions = {
         baseline,
-        allowMassDelete:
-            options.allowMassDelete ?? false,
     };
 
     // 1. Capture local state.
@@ -165,29 +165,29 @@ export async function sync(
                 userId
             );
 
-
         saveCurrentSnapshot(
             normalizedCloudSnapshot
         );
 
-
-        // 10/06/2026: baseline: null = nothing local to delete, plain restore.
+        // baseline: null = nothing local to delete, plain restore.
         const restoredSnapshot =
             await restoreSnapshotToLocalStorage(
                 normalizedCloudSnapshot,
                 { baseline: null }
             );
 
-
-        // 10/06/2026: Local now matches cloud, so record it as the baseline.
+        // Local now matches cloud, so record it as the baseline.
         saveSyncBaseline(
             restoredSnapshot
         );
 
-
         return restoredSnapshot;
     }
-if (
+
+    // --------------------------------------------------
+    // 5. Local exists but cloud does not.
+    // --------------------------------------------------
+    if (
         localSnapshot !== null &&
         cloudSnapshot === null
     ) {
@@ -198,34 +198,28 @@ if (
                 userId
             );
 
-
         saveCurrentSnapshot(
             normalizedLocalSnapshot
         );
 
-
-        // 10/06/2026: baseline: null = nothing in the cloud to compare against.
+        // baseline: null = nothing in the cloud to compare against.
         const restoredSnapshot =
             await restoreSnapshotToLocalStorage(
                 normalizedLocalSnapshot,
                 { baseline: null }
             );
 
-
         await sendSnapshot(
             restoredSnapshot
         );
 
-
-        // 10/06/2026: Only reached if the push succeeded.
+        // Only reached if the push succeeded.
         saveSyncBaseline(
             restoredSnapshot
         );
 
-
         return restoredSnapshot;
     }
-
 
     // --------------------------------------------------
     // TypeScript narrowing.
@@ -237,11 +231,8 @@ if (
         return null;
     }
 
-
     // --------------------------------------------------
-    // 6. Both Snapshots exist.
-    //
-    // Normalize both sides before reconciliation.
+    // 6. Both Snapshots exist. Normalize both sides.
     // --------------------------------------------------
     const normalizedLocalSnapshot =
         normalizeSnapshot(
@@ -249,18 +240,14 @@ if (
             userId
         );
 
-
     const normalizedCloudSnapshot =
         normalizeSnapshot(
             cloudSnapshot,
             userId
         );
 
-
     // --------------------------------------------------
-    // 7. Reconcile local and cloud.
-    //
-    // 10/06/2026: Passes the baseline so deletions are detected.
+    // 7. Reconcile local and cloud using the baseline.
     // --------------------------------------------------
     const resolvedSnapshot =
         reconcileSnapshots(
@@ -269,7 +256,6 @@ if (
             reconcileOptions
         );
 
-
     // --------------------------------------------------
     // 8. Save resolved Snapshot locally.
     // --------------------------------------------------
@@ -277,20 +263,14 @@ if (
         resolvedSnapshot
     );
 
-
     // --------------------------------------------------
-    // 9. Materialize resolved state into application
-    // storage.
-    //
-    // 10/06/2026: Same baseline here, so the restore step no longer
-    // re-adds items that were just deleted.
+    // 9. Materialize resolved state into application storage.
     // --------------------------------------------------
     const restoredSnapshot =
         await restoreSnapshotToLocalStorage(
             resolvedSnapshot,
             reconcileOptions
         );
-
 
     // --------------------------------------------------
     // 10. Push exactly the resolved state to Firebase.
@@ -299,18 +279,59 @@ if (
         restoredSnapshot
     );
 
-
     // --------------------------------------------------
-    // 10b. 10/06/2026: Record what was just synced. Only reached if the
-    // push above succeeded, so a failed sync never moves the baseline.
+    // 10b. Record what was just synced. Only reached if the push
+    // above succeeded, so a failed sync never moves the baseline.
     // --------------------------------------------------
     saveSyncBaseline(
         restoredSnapshot
     );
 
-
     // --------------------------------------------------
     // 11. Return final state.
     // --------------------------------------------------
     return restoredSnapshot;
+}
+
+
+// 10/09/2026 — Automatic sync.
+//
+// Runs a sync and never throws. If it can't run right now (offline, signed
+// out, Firestore error) that's fine: it logs and the next sync point
+// catches up. Call this wherever the user leaves a page.
+export async function autoSync(
+    userId: string
+): Promise<void> {
+    try {
+        await sync(userId);
+    } catch (error) {
+        console.error(
+            "[sync] Auto sync skipped, will catch up on the next one:",
+            error
+        );
+    }
+}
+
+// 10/09/2026 — Sync points for a signed-in user:
+//   - Login: sync immediately (pull and compare).
+//   - Losing focus: sync when the window loses focus.
+// Returns a function that removes the listener (use it as the effect
+// cleanup, or call it on logout).
+export function startAutoSync(
+    userId: string
+): () => void {
+
+    // Login: pull and compare right away.
+    void autoSync(userId);
+
+    // Losing focus.
+    const onBlur = () => {
+        void autoSync(userId);
+    };
+
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+        window.removeEventListener("blur", onBlur);
+    };
 }

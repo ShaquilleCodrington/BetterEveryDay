@@ -34,8 +34,8 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
 import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/connector";
-
-import { Routes, Route, Outlet } from "react-router-dom";
+import { autoSync } from "./Services/Snapshot/syncManager";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
 import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
@@ -218,6 +218,23 @@ type SidebarState = "closed" | "collapsed" | "open";
 
    const [sidebarState, setSidebarState] =
      useState<SidebarState>("open");
+       // 10/09/2026 — Sync when the user leaves a page. The cleanup runs when
+  // the path changes (leaving the old page) and when MainLayout unmounts
+  // (for example, going to the Timer page, which sits outside MainLayout).
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    const userId = currentUser.uid;
+
+    return () => {
+      void autoSync(userId);
+    };
+  }, [location.pathname, currentUser?.uid]);
+
 
 function handleSidebarToggle() {
     setSidebarState((currentState) => {

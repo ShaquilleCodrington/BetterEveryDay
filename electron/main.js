@@ -58,7 +58,30 @@ function setupAutoUpdater()
             {
                 if (result.response === 0)
                 {
-                    autoUpdater.quitAndInstall();
+                    // CHANGED: guarantee the app is really gone before
+                    // (and while) the installer runs.
+                    //
+                    // 1. Destroy every window, including the floating
+                    //    timer (skipTaskbar, so easy to miss). destroy()
+                    //    skips close handlers/prompts entirely.
+                    // 2. Start the install silently and relaunch after.
+                    // 3. If a normal quit hasn't finished within 2s,
+                    //    force the process to exit so no file stays
+                    //    locked and the installer isn't left waiting.
+                    BrowserWindow.getAllWindows().forEach((win) =>
+                    {
+                        if (!win.isDestroyed())
+                        {
+                            win.destroy();
+                        }
+                    });
+
+                    autoUpdater.quitAndInstall(true, true);
+
+                    setTimeout(() =>
+                    {
+                        app.exit(0);
+                    }, 2000);
                 }
             });
         });

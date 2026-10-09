@@ -21,6 +21,10 @@ import {
     normalizeProfile,
 } from "../../Data/profileStorage";
 
+// 10/09/2026 — Invoices are now part of the Snapshot. Adjust these two paths to match your folders.
+import type { InvoiceData } from "../../Features/invoice/types";
+import { getInvoices } from "../../Features/invoice/invoiceStorage";
+
 // 2026-08-23 — Define the local storage key for the latest winning Snapshot.
 const CURRENT_SNAPSHOT_KEY = "currentSnapshot";
 
@@ -35,12 +39,15 @@ export interface Snapshot {
     pages: Page[];
     blocks: Block[];
 
-
     notebooks: Notebook[];
     notebookFolders: NotebookFolder[];
 
     journeys: Journey[];
     journeyFolders: JourneyFolder[];
+
+    // 10/09/2026 — Added. Snapshots created before this field existed
+    // won't have it; normalizeSnapshot() fills in [] for them.
+    invoices: InvoiceData[];
 
     createdAt: string;
     updatedAt: string;
@@ -50,8 +57,7 @@ export async function createSnapshot(
     userId: string
 ): Promise<Snapshot>
 {
-
-      const storedProfile =
+    const storedProfile =
         await getProfile();
 
     const profile =
@@ -59,6 +65,7 @@ export async function createSnapshot(
             storedProfile,
             userId
         );
+
     const allTasks =
         loadTasks();
 
@@ -80,6 +87,10 @@ export async function createSnapshot(
     const allJourneyFolders =
         loadJourneyFolders();
 
+    // 10/09/2026 — Invoices aren't filtered by userId because the stored
+    // InvoiceData shown to me has no userId. If it has one, filter here too.
+    const invoices =
+        getInvoices();
 
     const tasks =
         allTasks.filter(
@@ -87,13 +98,11 @@ export async function createSnapshot(
                 task.userId === userId
         );
 
-
     const notebooks =
         allNotebooks.filter(
             (notebook) =>
                 notebook.userId === userId
         );
-
 
     const notebookFolders =
         allNotebookFolders.filter(
@@ -101,8 +110,6 @@ export async function createSnapshot(
                 folder.userId === userId
         );
 
-
-    
     const ownedNotebookIds =
         new Set(
             notebooks.map(
@@ -110,7 +117,6 @@ export async function createSnapshot(
                     notebook.id
             )
         );
-
 
     const pages =
         allPages.filter(
@@ -120,8 +126,6 @@ export async function createSnapshot(
                 )
         );
 
-
-    
     const ownedPageIds =
         new Set(
             pages.map(
@@ -129,7 +133,6 @@ export async function createSnapshot(
                     page.id
             )
         );
-
 
     const blocks =
         allBlocks.filter(
@@ -139,13 +142,11 @@ export async function createSnapshot(
                 )
         );
 
-
     const journeys =
         allJourneys.filter(
             (journey) =>
                 journey.userId === userId
         );
-
 
     const journeyFolders =
         allJourneyFolders.filter(
@@ -153,10 +154,8 @@ export async function createSnapshot(
                 folder.userId === userId
         );
 
-
     const now =
         new Date().toISOString();
-
 
     return {
         userId,
@@ -171,6 +170,8 @@ export async function createSnapshot(
 
         journeyFolders,
         journeys,
+
+        invoices,
 
         createdAt: now,
         updatedAt: now,
@@ -196,7 +197,6 @@ export function normalizeSnapshot(
         snapshot.updatedAt ??
         snapshot.createdAt ??
         now;
-
 
     return {
         ...snapshot,
@@ -228,6 +228,11 @@ export function normalizeSnapshot(
         journeyFolders:
             snapshot.journeyFolders ?? [],
 
+        // 10/09/2026 — Backwards compatibility: older local and cloud
+        // Snapshots have no invoices field.
+        invoices:
+            snapshot.invoices ?? [],
+
         createdAt:
             snapshot.createdAt ?? now,
 
@@ -239,14 +244,15 @@ export function normalizeSnapshot(
 
 // 2026-08-23 — Load the latest winning Snapshot used as the local comparison baseline.
 export function loadCurrentSnapshot(): Snapshot | null {
-    
+
     const storedSnapshot =
         localStorage.getItem(CURRENT_SNAPSHOT_KEY);
 
     if (!storedSnapshot) {
         return null;
     }
- try
+
+    try
     {
         return JSON.parse(
             storedSnapshot
@@ -278,13 +284,11 @@ export async function updateProfileSnapshot(
     const currentProfile =
         await getProfile();
 
-
     const normalizedCurrentProfile =
         normalizeProfile(
             currentProfile,
             snapshot.userId
         );
-
 
     const changed =
         normalizedCurrentProfile.uid !==
@@ -311,15 +315,12 @@ export async function updateProfileSnapshot(
                 snapshot.profile.titles[index]
         );
 
-
     if (!changed) {
         return snapshot;
     }
 
-
     const now =
         new Date().toISOString();
-
 
     return {
         ...snapshot,
@@ -344,8 +345,8 @@ export function updateTaskSnapshot(
 
     const changed =
         currentTasks.length !== snapshot.tasks.length ||
-        currentTasks.some(currentTask => 
-            {
+        currentTasks.some(currentTask =>
+        {
             const snapshotTask = snapshot.tasks.find(
                 task => task.id === currentTask.id
             );
@@ -366,6 +367,7 @@ export function updateTaskSnapshot(
         updatedAt: new Date().toISOString(),
     };
 }
+
 // 2026-08-24 — Compare locally stored Pages belonging to user-owned Notebooks.
 export function updatePageSnapshot(
     snapshot: Snapshot
@@ -388,7 +390,6 @@ export function updatePageSnapshot(
                 )
         );
 
-
     const currentPages =
         loadPages().filter(
             (page) =>
@@ -396,7 +397,6 @@ export function updatePageSnapshot(
                     page.notebookId
                 )
         );
-
 
     const changed =
         currentPages.length !==
@@ -411,7 +411,6 @@ export function updatePageSnapshot(
                             currentPage.id
                     );
 
-
                 return (
                     !snapshotPage ||
                     currentPage.updatedAt !==
@@ -420,12 +419,10 @@ export function updatePageSnapshot(
             }
         );
 
-
     if (!changed)
     {
         return snapshot;
     }
-
 
     return {
         ...snapshot,
@@ -452,7 +449,6 @@ export function updateBlockSnapshot(
             )
         );
 
-
     const currentBlocks =
         loadBlocks().filter(
             (block) =>
@@ -460,7 +456,6 @@ export function updateBlockSnapshot(
                     block.pageId
                 )
         );
-
 
     const changed =
         currentBlocks.length !==
@@ -475,7 +470,6 @@ export function updateBlockSnapshot(
                             currentBlock.id
                     );
 
-
                 return (
                     !snapshotBlock ||
                     currentBlock.updatedAt !==
@@ -484,12 +478,10 @@ export function updateBlockSnapshot(
             }
         );
 
-
     if (!changed)
     {
         return snapshot;
     }
-
 
     return {
         ...snapshot,
@@ -501,7 +493,6 @@ export function updateBlockSnapshot(
             new Date().toISOString(),
     };
 }
-
 
 
 export function updateNotebookSnapshot(
@@ -638,14 +629,52 @@ export function updateJourneyFolderSnapshot(
     };
 }
 
+// 10/09/2026 — Compare locally stored Invoices against the Snapshot.
+// `?? []` keeps this safe for older Snapshots that have no invoices field.
+export function updateInvoiceSnapshot(
+    snapshot: Snapshot
+): Snapshot {
+    const snapshotInvoices =
+        snapshot.invoices ?? [];
+
+    const currentInvoices =
+        getInvoices();
+
+    const changed =
+        currentInvoices.length !== snapshotInvoices.length ||
+        currentInvoices.some(currentInvoice => {
+            const snapshotInvoice =
+                snapshotInvoices.find(
+                    invoice => invoice.id === currentInvoice.id
+                );
+
+            return (
+                !snapshotInvoice ||
+                currentInvoice.updatedAt !==
+                    snapshotInvoice.updatedAt
+            );
+        });
+
+    if (!changed) {
+        return snapshot;
+    }
+
+    return {
+        ...snapshot,
+        invoices: currentInvoices,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
 // 2026-08-23 — Compare all local objects against the current Snapshot and produce the newest Snapshot state.
 export async function updateCurrentSnapshot(
     snapshot: Snapshot
 ): Promise<Snapshot> {
     let updatedSnapshot = snapshot;
 
-     updatedSnapshot =
+    updatedSnapshot =
         await updateProfileSnapshot(updatedSnapshot);
+
     // Independent user-owned collection.
     updatedSnapshot =
         updateTaskSnapshot(updatedSnapshot);
@@ -672,6 +701,10 @@ export async function updateCurrentSnapshot(
 
     updatedSnapshot =
         updateJourneyFolderSnapshot(updatedSnapshot);
+
+    // 10/09/2026 — Independent collection.
+    updatedSnapshot =
+        updateInvoiceSnapshot(updatedSnapshot);
 
     return updatedSnapshot;
 }

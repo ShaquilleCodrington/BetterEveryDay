@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { subscribeToAuthState, logout as firebaseLogout } from "./auth";
 import { getProfile, saveProfile } from "../../Data/profileStorage";
-import { sync } from "../Snapshot/syncManager";
+import { startAutoSync } from "../Snapshot/syncManager";
 /**
  * Call once near the root of the app (e.g. in App.tsx).
  * Subscribes to Firebase auth state for the lifetime of the
@@ -36,6 +36,9 @@ export function useAuthConnector(): User | null {
         useState<User | null>(null);
 
     useEffect(() => {
+        // 10/09/2026 — Removes the focus-loss sync for the signed-in user.
+        let stopAutoSync: (() => void) | null = null;
+
         const unsubscribe =
             subscribeToAuthState(async (user) => {
 
@@ -46,23 +49,34 @@ export function useAuthConnector(): User | null {
 
                 await syncProfileUid(nextUid);
 
+                // 10/09/2026 — Stop the previous user's auto sync
+                // (sign-out or a different user).
+                if (stopAutoSync) {
+                    stopAutoSync();
+                    stopAutoSync = null;
+                }
+
                 // 2026-08-26 — When Firebase confirms an authenticated
-// user, synchronize the local state with the shared
-// Continuity Snapshot.
+                // user, synchronize the local state with the shared
+                // Continuity Snapshot.
+                //
+                // 10/09/2026 — startAutoSync does that login sync (pull and
+                // compare) right away, then syncs again whenever the window
+                // loses focus. Failures are logged and the next sync point
+                // catches up.
                 if (user) {
-                    try {
-                        await sync(user.uid);
-                    }
-                    catch (error) {
-                        console.error(
-                            "Continuity synchronization failed:",
-                            error
-                        );
-                    }
+                    stopAutoSync =
+                        startAutoSync(user.uid);
                 }
             });
 
-        return unsubscribe;
+        return () => {
+            unsubscribe();
+
+            if (stopAutoSync) {
+                stopAutoSync();
+            }
+        };
     }, []);
 
     return currentUser;
