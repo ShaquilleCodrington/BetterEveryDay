@@ -1,6 +1,8 @@
 import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
     signOut,
     type User,
     type Unsubscribe,
@@ -40,6 +42,27 @@ export async function createAccount(
     );
 
     return credential.user;
+}
+
+
+// 2026-10-17: NEW. Email/password sign-in for the custom login form.
+// Firebase UI used to do this for us.
+export async function signIn(
+    email: string,
+    password: string
+): Promise<User> {
+    const credential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+    );
+
+    return credential.user;
+}
+
+// 2026-10-17: NEW. Sends the password reset email for "Forgot password?".
+export function resetPassword(email: string): Promise<void> {
+    return sendPasswordResetEmail(auth, email);
 }
 
 // Provides the existing auth layer with an explicit logout action.

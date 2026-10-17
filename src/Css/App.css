@@ -2083,3 +2083,276 @@
     display: flex;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2026-10-17: LOGIN REDESIGN
+   Right half = our own form. Left half = intentionally empty so the existing
+   starfield/canvas background shows through. Existing .login-* rules above are
+   NOT edited; everything here is additive or scoped under .login-half.
+   Uses your existing tokens from index.css, so it matches the rest of the app.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 2026-10-17: the half panel. Positioned against .login-page (already position: relative). */
+.login-half {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+
+    display: flex;                  /* child uses margin: auto, so it centers but never clips */
+    box-sizing: border-box;
+    padding: var(--space-lg);
+
+    overflow-y: auto;               /* short windows (landscape phones) scroll inside the panel */
+    overflow-x: hidden;
+
+    background: var(--bg-panel);
+    backdrop-filter: blur(var(--blur-panel));
+    -webkit-backdrop-filter: blur(var(--blur-panel));
+    border-left: 1px solid var(--border-panel);
+}
+
+/* 2026-10-17: inside the half, content is centered by flexbox instead of the old
+   absolute left: 50% / top: 58% positioning. */
+.login-half .login-content {
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+}
+
+/* 2026-10-17: heading and supporting text */
+.login-half .login-content h1 {
+    width: 100%;
+    margin-bottom: var(--space-sm);
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.login-form-subtitle {
+    width: 100%;
+    margin: 0 0 var(--space-lg);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+}
+
+/* 2026-10-17: form and fields */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.login-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
+}
+
+.login-form-field label {
+    font-size: var(--font-size-label);
+    letter-spacing: 0.06em;
+    color: var(--text-label);
+}
+
+.login-form-label-row {
+    display: flex;
+    flex-wrap: wrap;                /* "Forgot password?" drops below the label on very narrow screens */
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-xs);
+}
+
+.login-form-field input {
+    width: 100%;
+    box-sizing: border-box;
+    /* 16px minimum stops iOS from zooming in when the field is focused */
+    font-size: max(var(--font-size-input-touch, 16px), 16px);
+}
+
+.login-form-field input[aria-invalid="true"] {
+    border-color: rgba(255, 150, 160, 0.75);
+}
+
+.login-form-field input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* 2026-10-17: password field with the Show/Hide toggle inside it */
+.login-form-password {
+    position: relative;
+}
+
+.login-form-password input {
+    padding-right: 72px;            /* room for the toggle */
+}
+
+.login-form-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.04em;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+}
+
+/* the global button style lifts buttons on hover; keep the toggle still */
+.login-form-toggle:hover,
+.login-form-toggle:active {
+    transform: translateY(-50%);
+    box-shadow: none;
+}
+
+/* 2026-10-17: text-style buttons (Forgot password, Create an account) */
+.login-form-link {
+    padding: 4px 2px;
+    min-height: 32px;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.02em;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    color: var(--text-muted);
+}
+
+.login-form-link:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+    color: var(--text-heading);
+}
+
+.login-form-link:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* 2026-10-17: messages */
+.login-form-message {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+.login-form-error {
+    color: rgba(255, 170, 180, 0.98);
+}
+
+/* 2026-10-17: primary and guest buttons. Fixed height so changing labels never shifts the layout. */
+.login-form-submit,
+.login-form-guest-btn {
+    width: 100%;
+    min-height: 48px;               /* comfortable tap target */
+}
+
+.login-form-submit:disabled,
+.login-form-guest-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 2026-10-17: account creation section, divider, guest section. Generous spacing between the three. */
+.login-form-section {
+    display: flex;
+    flex-wrap: wrap;                /* text and link stack on narrow screens instead of overflowing */
+    align-items: center;
+    gap: var(--space-xs) var(--space-sm);
+    width: 100%;
+    margin-top: var(--space-xl);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+.login-form-divider {
+    width: 100%;
+    margin: var(--space-lg) 0;
+    border: none;
+    border-top: 1px solid var(--border-hr);
+}
+
+.login-form-guest {
+    width: 100%;
+}
+
+.login-form-guest h2 {
+    margin: 0 0 var(--space-xs);
+}
+
+.login-form-guest p {
+    margin: 0 0 var(--space-md);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2026-10-17: RESPONSIVE
+   800px and below: the page becomes a normal scrolling column. Logo on top,
+   form panel below, both full width. The existing background still shows
+   behind them. This also covers the smallest phones (320px).
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 800px) {
+
+    /* the original rule locks the screen to 100vh with overflow hidden, which would clip a tall form */
+    .firebase-login {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;             /* accounts for mobile browser toolbars */
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .login-page {
+        width: 100%;
+        min-height: 100%;
+        padding: var(--space-md);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-md);
+    }
+
+    /* logo leaves the top-left corner and sits above the form */
+    .login-logo-container {
+        position: static;
+        width: clamp(120px, 45vw, 200px);
+    }
+
+    .login-half {
+        position: static;
+        width: 100%;
+        max-width: 520px;
+        height: auto;
+        padding: var(--space-lg) var(--space-md);
+        overflow: visible;
+        border: 1px solid var(--border-panel);
+        border-radius: var(--radius-panel);
+    }
+}
+
+/* 2026-10-17: very small phones (around 360px and under): tighter padding */
+@media (max-width: 360px) {
+    .login-page {
+        padding: var(--space-sm);
+    }
+
+    .login-half {
+        padding: var(--space-md) var(--space-sm);
+    }
+}
