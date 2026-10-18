@@ -5,17 +5,20 @@ import { useAuthConnector } from "../Services/firebase/connector";
 type CreateTaskPopupProps = {
   onClose: () => void;
   onCreate: (task: Task) => void;
+  // 2026-10-18 — Optional starting due date (used when creating from the calendar)
+  initialDueDate?: string;
+};
 
-};export default function CreateTaskPopup({ onClose, onCreate }: CreateTaskPopupProps) 
+export default function CreateTaskPopup({ onClose, onCreate, initialDueDate }: CreateTaskPopupProps)
 { const  currentUser  = useAuthConnector();
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [mood, setMood] = useState("Focused");
   const [status, setStatus] = useState("Not Started");
   const [priority, setPriority] = useState("Medium");
-  const [dueDate, setDueDate] = useState("");
-
-function handleSubmit() {
+  const [dueDate, setDueDate] = useState(initialDueDate ?? "");
+  
+  function handleSubmit() {
    // ====================================================== // 2026-08-18 — State Convergence // ------------------------------------------------------ //
    //  Establish Task ownership at the creation boundary. 
    // // Guest-created Tasks use null. 
@@ -30,15 +33,15 @@ function handleSubmit() {
       userId,
       createdAt: now, 
       updatedAt: now, 
-      completedAt: null,
       title,
       notes,
-      completed: false,
       mood,
       status,
       priority,
       dueDate,
       checklist: [],
+      completedAt: status === "Completed" ? now : null,
+      completed: status === "Completed",
     };
     onCreate(newTask);
   }

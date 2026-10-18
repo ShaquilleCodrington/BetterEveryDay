@@ -1922,6 +1922,15 @@
   gap: var(--calendar-gap);
 }
 
+/* 2026-10-18: Create Task button row under the calendar grid */
+.calendar-page__actions {
+  padding: var(--space-md) var(--space-md) 0;
+}
+
+.calendar-page__actions button {
+  width: 100%;
+}
+
 .calendar-page__weekdays {
   margin-bottom: var(--space-xs);
   text-align: center;
@@ -2023,6 +2032,24 @@
 .calendar-page__event:hover {
   transform: none;
   box-shadow: none;
+}
+
+/* 2026-10-18: Chip color by lifecycle day.
+   created = blue, working (current due date) = amber, completed = green
+   (same green as a checked checklist box). */
+.calendar-page__event--created {
+  background: rgba(160, 190, 255, 0.14);
+  border-left: 3px solid rgba(160, 190, 255, 0.75);
+}
+
+.calendar-page__event--working {
+  background: rgba(255, 200, 110, 0.14);
+  border-left: 3px solid rgba(255, 200, 110, 0.80);
+}
+
+.calendar-page__event--completed {
+  background: rgba(120, 220, 150, 0.14);
+  border-left: 3px solid rgba(120, 220, 150, 0.85);
 }
 
 .calendar-page__more {

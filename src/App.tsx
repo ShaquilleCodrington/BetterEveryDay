@@ -35,7 +35,7 @@ import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
 import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/connector";
 import { autoSync } from "./Services/Snapshot/syncManager";
-import { Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation, useOutletContext } from "react-router-dom";
 import FocusPage from "./pages/FocusPage";
 import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
@@ -63,7 +63,9 @@ import {
 } from "./Features/Calendar/calendarStorage";
 import { loadTasks, saveTasks } from "./Data/taskStorage";
 import type { ChecklistItem } from "./Components/Checklist";
-import type { Task } from "./Data/tasks";
+// 2026-10-18 — Task lifecycle helpers and shared context type
+import type { Task, TaskOutletContext } from "./Data/tasks";
+import { applyChecklistChange, refreshTaskLifecycle } from "./Data/tasks";
 import "./Css/App.css";
 
 type AuthStatus = | "loading" |"login" ;
@@ -235,6 +237,41 @@ type SidebarState = "closed" | "collapsed" | "open";
     };
   }, [location.pathname, currentUser?.uid]);
 
+  // 2026-10-18 — Single source of truth for tasks. Every page reads and
+  // changes tasks through this state; nothing else keeps its own copy.
+  const [tasks, setTasks] = useState<Task[]>(() =>
+    refreshTaskLifecycle(loadTasks())
+  );
+
+  useEffect(() => {
+    saveTasks(tasks);
+  }, [tasks]);
+
+  function handleCreateTask(newTask: Task) {
+    setTasks((prevTasks) => [newTask, ...prevTasks]);
+  }
+
+  function handleEditTask(updatedTask: Task) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === updatedTask.id ? updatedTask : task
+      )
+    );
+  }
+
+  function handleDeleteTask(taskId: string) {
+    setTasks((prevTasks) =>
+      prevTasks.filter((task) => task.id !== taskId)
+    );
+  }
+
+  function handleChecklistChange(taskId: string, items: ChecklistItem[]) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? applyChecklistChange(task, items) : task
+      )
+    );
+  }
 
 function handleSidebarToggle() {
     setSidebarState((currentState) => {
@@ -278,38 +315,45 @@ function handleSidebarToggle() {
              />
 
         <div className="page-container">
-          <Outlet  context={{ currentUser, onLogin, onLogout }}/>
-       
+          <Outlet
+            context={{
+              currentUser,
+              onLogin,
+              onLogout,
+              // 2026-10-18 — shared task state and handlers
+              tasks,
+              onCreateTask: handleCreateTask,
+              onEditTask: handleEditTask,
+              onDeleteTask: handleDeleteTask,
+              onChecklistChange: handleChecklistChange,
+            }}
+          />
         </div>
       </div>
     </div>
   );
 }
+
 function CalendarRoute() {
-  // Tasks are read when the Calendar route opens.
-  const [tasks, setTasks] = useState<Task[]>(
-    () => loadTasks()
-  );
+  // 2026-10-18 — Tasks come from MainLayout; the calendar keeps no task state
+  const {
+    tasks,
+    onCreateTask,
+    onEditTask,
+    onDeleteTask,
+    onChecklistChange,
+  } = useOutletContext<TaskOutletContext>();
 
   // Calendar events load from their own storage key.
   const [calendarEvents, setCalendarEvents] =
     useState<CalendarEvent[]>(loadCalendarEvents);
-
-  // Task changes made from Calendar use the same task state
-  // that the Calendar page is displaying.
-  useEffect(() => {
-    saveTasks(tasks);
-  }, [tasks]);
 
   // Tasks with a valid due date and no event get one.
   // createCalendarEventsFromTasks returns the same array when nothing
   // is new, so this does not re-render in a loop.
   useEffect(() => {
     setCalendarEvents((currentEvents) =>
-      createCalendarEventsFromTasks(
-        tasks,
-        currentEvents
-      )
+      createCalendarEventsFromTasks(tasks, currentEvents)
     );
   }, [tasks]);
 
@@ -318,47 +362,14 @@ function CalendarRoute() {
     saveCalendarEvents(calendarEvents);
   }, [calendarEvents]);
 
-  function handleDeleteTask(taskId: string) {
-    setTasks((prevTasks) =>
-      prevTasks.filter(
-        (task) => task.id !== taskId
-      )
-    );
-  }
-
-  function handleEditTask(updatedTask: Task) {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === updatedTask.id
-          ? updatedTask
-          : task
-      )
-    );
-  }
-
-  function handleChecklistChange(
-    taskId: string,
-    items: ChecklistItem[]
-  ) {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              checklist: items,
-            }
-          : task
-      )
-    );
-  }
-
   return (
     <CalendarPage
       tasks={tasks}
       calendarEvents={calendarEvents}
-      onDeleteTask={handleDeleteTask}
-      onEditTask={handleEditTask}
-      onChecklistChange={handleChecklistChange}
+      onCreateTask={onCreateTask}
+      onDeleteTask={onDeleteTask}
+      onEditTask={onEditTask}
+      onChecklistChange={onChecklistChange}
     />
   );
 }

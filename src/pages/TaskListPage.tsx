@@ -1,12 +1,11 @@
 import TaskCard from "../Components/TaskCard";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import CreateTaskPopup from "../Components/CreateTaskPopup";
 import EditTaskPopup from "../Components/EditTaskPopup";
-import type { Task } from "../Data/tasks";
-import { loadTasks, saveTasks } from "../Data/taskStorage";
 import SortControl from "../Components/SortControl";
 import type { SortDirection } from "../Components/SortControl";
-import type { ChecklistItem } from "../Components/Checklist";
+import { useOutletContext } from "react-router-dom";
+import type { Task, TaskOutletContext } from "../Data/tasks";
 import
 {
     sortTasksByTitle,
@@ -19,12 +18,16 @@ from "../Data/taskSorting";
 
 export default function TaskListPage() {
 
-  const [tasks, setTask] = useState<Task[]>(() => loadTasks());
-    
-
-  useEffect(() => {
-    saveTasks(tasks);
-  }, [tasks]);
+    // 2026-10-18 — Backfill createdAt and carry incomplete tasks forward on load
+    // 2026-10-18 — Tasks come from the shared owner (MainLayout);
+  // this page keeps only its own UI state
+  const {
+    tasks,
+    onCreateTask,
+    onEditTask,
+    onDeleteTask,
+    onChecklistChange,
+  } = useOutletContext<TaskOutletContext>();
 
   const [showCreateTaskPopup, setShowCreateTaskPopup] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -68,31 +71,16 @@ export default function TaskListPage() {
   const sortedTasks =
       getSortedTasks();
 
-  function handleCreateTask(newTask: Task) {
-    setTask((prevTasks) => [newTask, ...prevTasks]);
+    function handleCreateTask(newTask: Task) {
+    onCreateTask(newTask);
     setShowCreateTaskPopup(false);
   }
 
-  {/* Function to create new task  */}
-  function handleDeleteTask(taskId: string) {
-
-    //refresh {age
-    setTask(prevTask =>
-      prevTask.filter(task => task.id !== taskId));
-  }
-
   function handleEditTask(updated: Task) {
-    setTask(prevTasks =>
-      prevTasks.map(t => t.id === updated.id ? updated : t)
-    );
+    onEditTask(updated);
     setEditingTask(null);
   }
 
-  function handleChecklistChange(taskId: string, items: ChecklistItem[]) {
-    setTask(prevTasks =>
-      prevTasks.map(t => t.id === taskId ? { ...t, checklist: items } : t)
-    );
-  }
 
   return (
     <div>
@@ -134,10 +122,10 @@ export default function TaskListPage() {
         {sortedTasks.map((task) =>
           <TaskCard key={task.id}
             {...task}
-            onDelete={() => handleDeleteTask(task.id)}
+            onDelete={() => onDeleteTask(task.id)}
             onEdit={() => setEditingTask(task)}
-             onChecklistChange={(items) =>
-                    handleChecklistChange(task.id, items)}
+            onChecklistChange={(items) =>
+              onChecklistChange(task.id, items)}
           />
         )}
       </div>

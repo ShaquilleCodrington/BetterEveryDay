@@ -139,6 +139,46 @@ export const createCalendarEventsFromTasks = (
   return [...existingEvents, ...newCalendarEvents];
 };
 
+// 2026-10-18 — Calendar shows a task on its lifecycle dates, derived from the
+// task itself (created + working date, or created + completed date)
+const toLocalCalendarDate = (isoString: string): CalendarDate | null => {
+  const parsedDate = new Date(isoString);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return createCalendarDate(parsedDate);
+};
+
+const getTaskCalendarDates = (task: Task): CalendarDate[] => {
+  const taskDates = new Set<CalendarDate>();
+
+  const createdDate = task.createdAt
+    ? toLocalCalendarDate(task.createdAt)
+    : null;
+
+  if (createdDate) {
+    taskDates.add(createdDate);
+  }
+
+  if (task.completed) {
+    const completedDate = task.completedAt
+      ? toLocalCalendarDate(task.completedAt)
+      : null;
+
+    if (completedDate) {
+      taskDates.add(completedDate);
+    }
+  } else if (isValidCalendarDate(task.dueDate)) {
+    taskDates.add(task.dueDate);
+  }
+
+  return [...taskDates];
+};
+
+
+
 export const groupCalendarEventsByDate = (
   calendarEvents: CalendarEvent[],
   tasks: Task[]
@@ -150,21 +190,51 @@ export const groupCalendarEventsByDate = (
   );
 
 
-  calendarEvents.forEach((calendarEvent) => {
-   const task = tasksById.get(calendarEvent.taskId);
+ calendarEvents.forEach((calendarEvent) => {
+    const task = tasksById.get(calendarEvent.taskId);
 
-   if (!task?.dueDate || !isValidCalendarDate(task.dueDate)) {
-      return;
-    }
-    const dateEvents = eventsByDate.get(task.dueDate);
-
-    if (dateEvents) {
-      dateEvents.push(calendarEvent);
+    if (!task) {
       return;
     }
 
-    eventsByDate.set(task.dueDate, [calendarEvent]);
+    getTaskCalendarDates(task).forEach((taskDate) => {
+      const dateEvents = eventsByDate.get(taskDate);
+
+      if (dateEvents) {
+        dateEvents.push(calendarEvent);
+        return;
+      }
+
+      eventsByDate.set(taskDate, [calendarEvent]);
+    });
   });
 
   return eventsByDate;
+};
+
+// 2026-10-18 — Which kind of day a task chip is sitting on (drives its color)
+export type CalendarDateKind = "created" | "working" | "completed";
+
+export const getTaskDateKind = (
+  task: Task,
+  calendarDate: CalendarDate
+): CalendarDateKind => {
+  const completedDate =
+    task.completed && task.completedAt
+      ? toLocalCalendarDate(task.completedAt)
+      : null;
+
+  if (completedDate === calendarDate) {
+    return "completed";
+  }
+
+  const createdDate = task.createdAt
+    ? toLocalCalendarDate(task.createdAt)
+    : null;
+
+  if (createdDate === calendarDate) {
+    return "created";
+  }
+
+  return "working";
 };

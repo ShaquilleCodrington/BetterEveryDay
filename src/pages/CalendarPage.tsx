@@ -3,10 +3,15 @@ import type { Task } from "../Data/tasks";
 import type { ChecklistItem } from "../Components/Checklist";
 import TaskCard from "../Components/TaskCard";
 import EditTaskPopup from "../Components/EditTaskPopup";
+// 2026-10-18 — Create Task popup, reused from the Task List page
+import CreateTaskPopup from "../Components/CreateTaskPopup";
 import {
   changeCalendarMonth,
+  // 2026-10-18 — today's date as the default for a new task
+  createCalendarDate,
   getCalendarMonthDays,
   getCurrentCalendarMonth,
+  getTaskDateKind,
   groupCalendarEventsByDate,
   parseCalendarDate,
 } from "../Features/Calendar/calendar";
@@ -19,6 +24,8 @@ import type {
 type CalendarPageProps = {
   tasks: Task[];
   calendarEvents: CalendarEvent[];
+  // 2026-10-18 — Calendar creates tasks through the shared task handler
+  onCreateTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onEditTask: (task: Task) => void;
   onChecklistChange: (
@@ -42,6 +49,7 @@ const WEEKDAY_LABELS = [
 export default function CalendarPage({
   tasks,
   calendarEvents,
+  onCreateTask,
   onDeleteTask,
   onEditTask,
   onChecklistChange,
@@ -54,6 +62,10 @@ export default function CalendarPage({
 
   const [editingTask, setEditingTask] =
     useState<Task | null>(null);
+
+  // 2026-10-18 — Create Task popup visibility (UI state only, no task data)
+  const [showCreateTaskPopup, setShowCreateTaskPopup] =
+    useState(false);
 
   const calendarDays = useMemo(
     () => getCalendarMonthDays(calendarMonth),
@@ -199,10 +211,16 @@ export default function CalendarPage({
                       return null;
                     }
 
+                    // 2026-10-18 — Chip color by lifecycle day
+                    const dateKind = getTaskDateKind(
+                      task,
+                      calendarDay.date
+                    );
+
                     return (
                       <span
                         key={calendarEvent.id}
-                        className="calendar-page__event"
+                        className={`calendar-page__event calendar-page__event--${dateKind}`}
                       >
                         {task.title}
                       </span>
@@ -219,6 +237,16 @@ export default function CalendarPage({
             </div>
           );
         })}
+      </div>
+
+      {/* 2026-10-18 — Create Task button, always shown under the calendar */}
+      <div className="calendar-page__actions">
+        <button
+          className="btn-primary"
+          onClick={() => setShowCreateTaskPopup(true)}
+        >
+          + Create New Task
+        </button>
       </div>
 
       {selectedDate && (
@@ -276,6 +304,20 @@ export default function CalendarPage({
             setEditingTask(null);
           }}
           onClose={() => setEditingTask(null)}
+        />
+      )}
+
+      {/* 2026-10-18 — New task starts on the selected day, or today */}
+      {showCreateTaskPopup && (
+        <CreateTaskPopup
+          initialDueDate={
+            selectedDate ?? createCalendarDate(new Date())
+          }
+          onCreate={(newTask) => {
+            onCreateTask(newTask);
+            setShowCreateTaskPopup(false);
+          }}
+          onClose={() => setShowCreateTaskPopup(false)}
         />
       )}
     </section>

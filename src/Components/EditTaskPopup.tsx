@@ -15,7 +15,11 @@ export default function EditTaskPopup({ task, onClose, onSave }: EditTaskPopupPr
   const [priority, setPriority] = useState(task.priority);
   const [dueDate, setDueDate] = useState(task.dueDate);
 
-  function handleSave() {
+   function handleSave() {
+    // 2026-10-18 — Manual completion also records/clears completedAt
+    const now = new Date().toISOString();
+    const isNowCompleted = status === "Completed";
+
     onSave({
       ...task,
       title,
@@ -24,8 +28,9 @@ export default function EditTaskPopup({ task, onClose, onSave }: EditTaskPopupPr
       status,
       priority,
       dueDate,
-      completed: status === "Completed",
-      updatedAt: new Date().toISOString(),
+      completed: isNowCompleted,
+      completedAt: isNowCompleted ? task.completedAt ?? now : null,
+      updatedAt: now,
     });
   }
 
