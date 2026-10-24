@@ -58,40 +58,23 @@ function setupAutoUpdater()
                 cancelId: 1,
             }).then((result) =>
             {
-                if (result.response === 0)
+              if (result.response === 0)
                 {
-                    // CHANGED: guarantee the app is really gone before
-                    // (and while) the installer runs.
-                    //
-                    // 0. Raise isInstallingUpdate so destroying the
-                    //    windows doesn't make "window-all-closed" call
-                    //    app.quit() ahead of quitAndInstall().
-                    // 1. Destroy every window, including the floating
-                    //    timer (skipTaskbar, so easy to miss). destroy()
-                    //    skips close handlers/prompts entirely.
-                    // 2. Start the install silently and relaunch after.
-                    // 3. If a normal quit hasn't finished within 2s,
-                    //    force the process to exit so no file stays
-                    //    locked and the installer isn't left waiting.
-                    isInstallingUpdate = true;
-
-                    BrowserWindow.getAllWindows().forEach((win) =>
-                    {
-                        if (!win.isDestroyed())
-                        {
-                            win.destroy();
-                        }
-                    });
-
+                    // CHANGED: no manual window destroying, flags, or
+                    // forced exit anymore. electron-updater already
+                    // starts the installer, quits the app, and
+                    // relaunches it afterward (silent = true,
+                    // force run after = true), and the installer does
+                    // its own "is the app still running" check. Our
+                    // extra closing logic was racing with that check
+                    // and causing "Failed to uninstall old application
+                    // files". Choosing "Later" still installs on the
+                    // next normal quit (autoInstallOnAppQuit default).
                     autoUpdater.quitAndInstall(true, true);
-
-                    setTimeout(() =>
-                    {
-                        app.exit(0);
-                    }, 2000);
                 }
             });
         });
+
         // Non-fatal — if the update check fails (no internet, GitHub
         // unreachable, etc.), the app should just continue running
         // normally rather than interrupting the user.
@@ -310,17 +293,8 @@ function setupAutoUpdater()
     });
 
 
-
-        // Close the application once every window has been closed.
-        // CHANGED: skipped while an update is being installed, so the
-        // window destruction in the "Restart Now" flow doesn't trigger
-        // a quit before quitAndInstall() has started the installer.
+     // Close the application once every window has been closed.
     app.on("window-all-closed", () =>
     {
-        if (isInstallingUpdate)
-        {
-            return;
-        }
-
         app.quit();
     });

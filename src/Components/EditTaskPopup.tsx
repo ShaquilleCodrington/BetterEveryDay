@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Task } from "../Data/tasks";
+import { createPortal } from "react-dom";
 
 type EditTaskPopupProps = {
   task: Task;
@@ -34,7 +35,7 @@ export default function EditTaskPopup({ task, onClose, onSave }: EditTaskPopupPr
     });
   }
 
-  return (
+  return createPortal(
     <div className="popup-overlay">
       <div className="glass-panel popup-window">
         <h2>Edit Task</h2>
@@ -87,6 +88,7 @@ export default function EditTaskPopup({ task, onClose, onSave }: EditTaskPopupPr
           <button onClick={onClose}>Cancel</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
