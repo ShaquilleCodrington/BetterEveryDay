@@ -22,6 +22,8 @@ const appIconPath =
 app.setAppUserModelId("com.bettereveryday.app");
 
 const { autoUpdater } = pkg;
+
+let isInstallingUpdate = false;
     // Profile data persistence
     // ------------------------------------------------------
     // The user's profile (name, titles, bio, photo) lives in its own
@@ -61,6 +63,9 @@ function setupAutoUpdater()
                     // CHANGED: guarantee the app is really gone before
                     // (and while) the installer runs.
                     //
+                    // 0. Raise isInstallingUpdate so destroying the
+                    //    windows doesn't make "window-all-closed" call
+                    //    app.quit() ahead of quitAndInstall().
                     // 1. Destroy every window, including the floating
                     //    timer (skipTaskbar, so easy to miss). destroy()
                     //    skips close handlers/prompts entirely.
@@ -68,6 +73,8 @@ function setupAutoUpdater()
                     // 3. If a normal quit hasn't finished within 2s,
                     //    force the process to exit so no file stays
                     //    locked and the installer isn't left waiting.
+                    isInstallingUpdate = true;
+
                     BrowserWindow.getAllWindows().forEach((win) =>
                     {
                         if (!win.isDestroyed())
@@ -85,7 +92,6 @@ function setupAutoUpdater()
                 }
             });
         });
-
         // Non-fatal — if the update check fails (no internet, GitHub
         // unreachable, etc.), the app should just continue running
         // normally rather than interrupting the user.
@@ -304,8 +310,17 @@ function setupAutoUpdater()
     });
 
 
+
         // Close the application once every window has been closed.
+        // CHANGED: skipped while an update is being installed, so the
+        // window destruction in the "Restart Now" flow doesn't trigger
+        // a quit before quitAndInstall() has started the installer.
     app.on("window-all-closed", () =>
     {
+        if (isInstallingUpdate)
+        {
+            return;
+        }
+
         app.quit();
     });
