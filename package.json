@@ -2,7 +2,7 @@
   "name": "BetterEveryDay",
   "productName": "BetterEveryDay",
   "private": true,
-  "version": "0.0.16",
+  "version": "0.0.17",
   "type": "module",
   "main": "electron/main.js",
   "description": "A personal productivity app for tracking journeys, sessions, and tasks.",
@@ -54,11 +54,12 @@
     "@firebase-oss/ui-react": "^7.0.3",
     "@firebase-oss/ui-styles": "^7.1.0",
     "electron-updater": "^6.3.9",
-    "firebase": "^12.17.1",
+    "firebase": "^12.19.0",
     "lucide-react": "^1.31.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.15.1"
+    "react-router-dom": "^7.15.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -80,5 +81,11 @@
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.10",
     "wait-on": "^9.0.10"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.3": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.28.2": true,
+    "protobufjs@7.6.6": true
   }
 }

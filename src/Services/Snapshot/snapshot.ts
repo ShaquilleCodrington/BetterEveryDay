@@ -28,6 +28,27 @@ import { getInvoices } from "../../Features/invoice/invoiceStorage";
 // 2026-08-23 — Define the local storage key for the latest winning Snapshot.
 const CURRENT_SNAPSHOT_KEY = "currentSnapshot";
 
+// ★★★★★ CHANGED 10/25/2026 ★★★★★ — NEW: permanent deletion record.
+// Each collection maps an item's ID to the ISO time it was deleted.
+// Journeys use journeyId as the key.
+export interface DeletedItems {
+    tasks: Record<string, string>;
+    pages: Record<string, string>;
+    blocks: Record<string, string>;
+    notebooks: Record<string, string>;
+    notebookFolders: Record<string, string>;
+    journeys: Record<string, string>;
+    journeyFolders: Record<string, string>;
+    invoices: Record<string, string>;
+}
+
+export type DeletedCollection = keyof DeletedItems;
+
+// ★★★★★ CHANGED 10/25/2026 ★★★★★ — NEW: how long a deletion record is kept.
+// After this many days no snapshot on any device should still hold the
+// item, so the record is dropped. Raise it if a device sits unused longer.
+export const DELETED_RETENTION_DAYS = 15;
+
 export interface Snapshot {
     userId: string;
 
@@ -48,10 +69,123 @@ export interface Snapshot {
     // 10/09/2026 — Added. Snapshots created before this field existed
     // won't have it; normalizeSnapshot() fills in [] for them.
     invoices: InvoiceData[];
+    deleted: DeletedItems;
 
     createdAt: string;
     updatedAt: string;
 }
+
+export function emptyDeleted(): DeletedItems {
+    return {
+        tasks: {},
+        pages: {},
+        blocks: {},
+        notebooks: {},
+        notebookFolders: {},
+        journeys: {},
+        journeyFolders: {},
+        invoices: {},
+    };
+}
+
+// Fills in any missing collection and copies the records.
+export function normalizeDeleted(
+    deleted?: Partial<DeletedItems> | null
+): DeletedItems {
+    return {
+        tasks: { ...(deleted?.tasks ?? {}) },
+        pages: { ...(deleted?.pages ?? {}) },
+        blocks: { ...(deleted?.blocks ?? {}) },
+        notebooks: { ...(deleted?.notebooks ?? {}) },
+        notebookFolders: { ...(deleted?.notebookFolders ?? {}) },
+        journeys: { ...(deleted?.journeys ?? {}) },
+        journeyFolders: { ...(deleted?.journeyFolders ?? {}) },
+        invoices: { ...(deleted?.invoices ?? {}) },
+    };
+}
+// Union of two deletion records. A deletion known to either side is kept.
+export function mergeDeleted(
+    first?: Partial<DeletedItems> | null,
+    second?: Partial<DeletedItems> | null
+): DeletedItems {
+    const merged = normalizeDeleted(first);
+    const other = normalizeDeleted(second);
+
+    for (const key of Object.keys(merged) as DeletedCollection[]) {
+        for (const [id, deletedAt] of Object.entries(other[key])) {
+            const existing = merged[key][id];
+
+            if (existing === undefined || deletedAt < existing) {
+                merged[key][id] = deletedAt;
+            }
+        }
+    }
+
+    return merged;
+}
+
+// Drops deletion records older than DELETED_RETENTION_DAYS.
+export function pruneDeleted(
+    deleted?: Partial<DeletedItems> | null
+): DeletedItems {
+    const result = normalizeDeleted(deleted);
+
+    const cutoff =
+        Date.now() - DELETED_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+    for (const key of Object.keys(result) as DeletedCollection[]) {
+        for (const [id, deletedAt] of Object.entries(result[key])) {
+            // An unreadable date is kept rather than guessed at.
+            if (Date.parse(deletedAt) < cutoff) {
+                delete result[key][id];
+            }
+        }
+    }
+
+    return result;
+}
+
+// Compares the Snapshot from before an update with the one after it.
+// Anything that was there before and is gone now was deleted: record it.
+function recordDeletions(
+    before: Snapshot,
+    after: Snapshot
+): DeletedItems {
+    const now = new Date().toISOString();
+    const result = normalizeDeleted(after.deleted);
+
+    function mark<T>(
+        collection: DeletedCollection,
+        beforeItems: T[],
+        afterItems: T[],
+        getId: (item: T) => string
+    ): void {
+        const afterIds = new Set(afterItems.map(getId));
+
+        for (const item of beforeItems) {
+            const id = getId(item);
+
+            if (
+                !afterIds.has(id) &&
+                result[collection][id] === undefined
+            ) {
+                result[collection][id] = now;
+            }
+        }
+    }
+
+    mark("tasks", before.tasks ?? [], after.tasks ?? [], item => item.id);
+    mark("pages", before.pages ?? [], after.pages ?? [], item => item.id);
+    mark("blocks", before.blocks ?? [], after.blocks ?? [], item => item.id);
+    mark("notebooks", before.notebooks ?? [], after.notebooks ?? [], item => item.id);
+    mark("notebookFolders", before.notebookFolders ?? [], after.notebookFolders ?? [], item => item.id);
+    mark("journeys", before.journeys ?? [], after.journeys ?? [], item => item.journeyId);
+    mark("journeyFolders", before.journeyFolders ?? [], after.journeyFolders ?? [], item => item.id);
+    mark("invoices", before.invoices ?? [], after.invoices ?? [], item => item.id);
+
+    return result;
+}
+
 
 export async function createSnapshot(
     userId: string
@@ -160,7 +294,7 @@ export async function createSnapshot(
     return {
         userId,
         profile,
-        profileUpdatedAt: now,
+        profileUpdatedAt: "",
         tasks,
 
         notebookFolders,
@@ -172,11 +306,14 @@ export async function createSnapshot(
         journeys,
 
         invoices,
+        deleted: emptyDeleted(),
+
 
         createdAt: now,
         updatedAt: now,
     };
 }
+
 
 export function normalizeSnapshot(
     snapshot: Partial<Snapshot>,
@@ -192,11 +329,8 @@ export function normalizeSnapshot(
             userId
         );
 
-    const profileUpdatedAt =
-        snapshot.profileUpdatedAt ??
-        snapshot.updatedAt ??
-        snapshot.createdAt ??
-        now;
+   const profileUpdatedAt =
+        snapshot.profileUpdatedAt ?? "";
 
     return {
         ...snapshot,
@@ -232,6 +366,11 @@ export function normalizeSnapshot(
         // Snapshots have no invoices field.
         invoices:
             snapshot.invoices ?? [],
+
+        deleted:
+            normalizeDeleted(
+                snapshot.deleted
+            ),
 
         createdAt:
             snapshot.createdAt ?? now,
@@ -702,9 +841,12 @@ export async function updateCurrentSnapshot(
     updatedSnapshot =
         updateJourneyFolderSnapshot(updatedSnapshot);
 
-    // 10/09/2026 — Independent collection.
-    updatedSnapshot =
-        updateInvoiceSnapshot(updatedSnapshot);
+    // Anything that was in the original Snapshot and is gone now was
+    // deleted locally. Record it so it can never come back.
+    updatedSnapshot = {
+        ...updatedSnapshot,
+        deleted: recordDeletions(snapshot, updatedSnapshot),
+    };
 
     return updatedSnapshot;
 }

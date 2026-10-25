@@ -2,9 +2,6 @@ import {
     processCurrentSnapshot,
     reconcileSnapshots,
     restoreSnapshotToLocalStorage,
-    loadSyncBaseline,
-    saveSyncBaseline,
-    type ReconcileOptions,
 } from "./snapshotManager";
 
 import {
@@ -122,21 +119,13 @@ export async function sendSnapshot(
 // The resolved Snapshot is then written locally,
 // materialized into application storage, and pushed
 // back to Firebase.
-//
-// 10/06/2026: Loads the last-sync baseline before anything changes, and
-// saves a new baseline only after a successful sync.
+// ★★★★★ CHANGED 10/25/2026 ★★★★★ — The sync baseline was removed.
+// Deletions are recorded inside the Snapshot (the `deleted` field), merged
+// from both sides, and always win during reconcile and restore.
 export async function sync(
     userId: string,
     _options: SyncOptions = {}
 ): Promise<Snapshot | null> {
-
-    // 10/06/2026: Load the baseline FIRST, before this sync touches anything.
-    const baseline =
-        loadSyncBaseline(userId);
-
-    const reconcileOptions: ReconcileOptions = {
-        baseline,
-    };
 
     // 1. Capture local state.
     const localSnapshot =
@@ -172,15 +161,9 @@ export async function sync(
         // baseline: null = nothing local to delete, plain restore.
         const restoredSnapshot =
             await restoreSnapshotToLocalStorage(
-                normalizedCloudSnapshot,
-                { baseline: null }
+                normalizedCloudSnapshot 
             );
-
-        // Local now matches cloud, so record it as the baseline.
-        saveSyncBaseline(
-            restoredSnapshot
-        );
-
+        
         return restoredSnapshot;
     }
 
@@ -205,16 +188,10 @@ export async function sync(
         // baseline: null = nothing in the cloud to compare against.
         const restoredSnapshot =
             await restoreSnapshotToLocalStorage(
-                normalizedLocalSnapshot,
-                { baseline: null }
+                normalizedLocalSnapshot
             );
 
         await sendSnapshot(
-            restoredSnapshot
-        );
-
-        // Only reached if the push succeeded.
-        saveSyncBaseline(
             restoredSnapshot
         );
 
@@ -252,8 +229,7 @@ export async function sync(
     const resolvedSnapshot =
         reconcileSnapshots(
             normalizedLocalSnapshot,
-            normalizedCloudSnapshot,
-            reconcileOptions
+            normalizedCloudSnapshot
         );
 
     // --------------------------------------------------
@@ -268,22 +244,13 @@ export async function sync(
     // --------------------------------------------------
     const restoredSnapshot =
         await restoreSnapshotToLocalStorage(
-            resolvedSnapshot,
-            reconcileOptions
+            resolvedSnapshot
         );
 
     // --------------------------------------------------
     // 10. Push exactly the resolved state to Firebase.
     // --------------------------------------------------
     await sendSnapshot(
-        restoredSnapshot
-    );
-
-    // --------------------------------------------------
-    // 10b. Record what was just synced. Only reached if the push
-    // above succeeded, so a failed sync never moves the baseline.
-    // --------------------------------------------------
-    saveSyncBaseline(
         restoredSnapshot
     );
 
