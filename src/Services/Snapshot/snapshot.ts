@@ -159,11 +159,12 @@ export function pruneDeleted(
     return result;
 }
 
-// Compares the Snapshot from before an update with the one after it.
-// Anything that was there before and is gone now was deleted: record it.
+// 11/05/2026 — Only record deletions when the item is absent
+// from BOTH local state and the cloud Snapshot.
 function recordDeletions(
     before: Snapshot,
-    after: Snapshot
+    after: Snapshot,
+    cloud?: Snapshot | null
 ): DeletedItems {
     const now = new Date().toISOString();
     const result = normalizeDeleted(after.deleted);
@@ -172,15 +173,18 @@ function recordDeletions(
         collection: DeletedCollection,
         beforeItems: T[],
         afterItems: T[],
+        cloudItems: T[],
         getId: (item: T) => string
     ): void {
         const afterIds = new Set(afterItems.map(getId));
+        const cloudIds = new Set(cloudItems.map(getId));
 
         for (const item of beforeItems) {
             const id = getId(item);
 
             if (
                 !afterIds.has(id) &&
+                !cloudIds.has(id) &&
                 result[collection][id] === undefined
             ) {
                 result[collection][id] = now;
@@ -188,16 +192,16 @@ function recordDeletions(
         }
     }
 
-    mark("tasks", before.tasks ?? [], after.tasks ?? [], item => item.id);
-    mark("pages", before.pages ?? [], after.pages ?? [], item => item.id);
-    mark("blocks", before.blocks ?? [], after.blocks ?? [], item => item.id);
-    mark("notebooks", before.notebooks ?? [], after.notebooks ?? [], item => item.id);
-    mark("notebookFolders", before.notebookFolders ?? [], after.notebookFolders ?? [], item => item.id);
-    mark("journeys", before.journeys ?? [], after.journeys ?? [], item => item.journeyId);
-    mark("journeyFolders", before.journeyFolders ?? [], after.journeyFolders ?? [], item => item.id);
-    mark("invoices", before.invoices ?? [], after.invoices ?? [], item => item.id);
-    mark("comments", before.comments ?? [], after.comments ?? [], item => item.id);
-    mark("commentLikes", before.commentLikes ?? [], after.commentLikes ?? [], item => item.id);
+    mark("tasks", before.tasks ?? [], after.tasks ?? [], cloud?.tasks ?? [], item => item.id);
+    mark("pages", before.pages ?? [], after.pages ?? [], cloud?.pages ?? [], item => item.id);
+    mark("blocks", before.blocks ?? [], after.blocks ?? [], cloud?.blocks ?? [], item => item.id);
+    mark("notebooks", before.notebooks ?? [], after.notebooks ?? [], cloud?.notebooks ?? [], item => item.id);
+    mark("notebookFolders", before.notebookFolders ?? [], after.notebookFolders ?? [], cloud?.notebookFolders ?? [], item => item.id);
+    mark("journeys", before.journeys ?? [], after.journeys ?? [], cloud?.journeys ?? [], item => item.journeyId);
+    mark("journeyFolders", before.journeyFolders ?? [], after.journeyFolders ?? [], cloud?.journeyFolders ?? [], item => item.id);
+    mark("invoices", before.invoices ?? [], after.invoices ?? [], cloud?.invoices ?? [], item => item.id);
+    mark("comments", before.comments ?? [], after.comments ?? [], cloud?.comments ?? [], item => item.id);
+    mark("commentLikes", before.commentLikes ?? [], after.commentLikes ?? [], cloud?.commentLikes ?? [], item => item.id);
 
     return result;
 }
@@ -918,7 +922,8 @@ export function updateCommentLikeSnapshot(
 
 // 2026-08-23 — Compare all local objects against the current Snapshot and produce the newest Snapshot state.
 export async function updateCurrentSnapshot(
-    snapshot: Snapshot
+    snapshot: Snapshot,
+    cloudSnapshot?: Snapshot | null
 ): Promise<Snapshot> {
     let updatedSnapshot = snapshot;
 
@@ -962,8 +967,7 @@ export async function updateCurrentSnapshot(
     // Anything that was in the original Snapshot and is gone now was
     // deleted locally. Record it so it can never come back.
     const deleted =
-        recordDeletions(snapshot, updatedSnapshot);
-
+    recordDeletions(snapshot, updatedSnapshot, cloudSnapshot);
     // 11/05/2026 — A like's ID is always userId_commentId, so un-liking
     // and then liking again brings the same ID back. A like that exists
     // again is not deleted, so clear its old deletion record.

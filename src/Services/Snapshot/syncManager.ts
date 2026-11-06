@@ -133,14 +133,15 @@ async function syncPersonalSnapshot(
     _options: SyncOptions = {}
 ): Promise<Snapshot | null> {
 
-    // 1. Capture local state.
-    const localSnapshot =
-        await processCurrentSnapshot(userId);
-
-    // 2. Always pull cloud state.
+      // 1. Always pull cloud state first.
     const cloudSnapshot =
         await receiveSnapshot(userId);
 
+    // 2. Capture local state.
+    const localSnapshot =
+        await processCurrentSnapshot(userId);
+
+  
     // 3. Nothing exists anywhere.
     if (localSnapshot === null && cloudSnapshot === null) {
         return null;

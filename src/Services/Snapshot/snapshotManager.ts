@@ -73,13 +73,19 @@ export async function processCurrentSnapshot(userId?: string): Promise<Snapshot 
         return newSnapshot;
     }
 
-    if (userId) {
-        currentSnapshot =
-            normalizeSnapshot(
-                currentSnapshot,
-                userId
-            );
-    }
+   // Never allow a Snapshot belonging to another account
+// to be reassigned to the currently authenticated user.
+if (currentSnapshot.userId !== userId) {
+    throw new Error(
+        "[Continuity] Account mismatch. Local Snapshot belongs to another user."
+    );
+}
+
+currentSnapshot =
+    normalizeSnapshot(
+        currentSnapshot,
+        userId
+    );
 
     const updatedSnapshot =
         await updateCurrentSnapshot(currentSnapshot);
