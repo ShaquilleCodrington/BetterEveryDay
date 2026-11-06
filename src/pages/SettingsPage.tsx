@@ -20,6 +20,12 @@ const settingsCategories = [
     icon: "🔔",
   },
   {
+    title: "Deleted",
+    description: "Restore deleted items and daily snapshots",
+    path: "/settings/deleted",
+    icon: "🗑️",
+  },
+  {
     title: "Profile Settings",
     description: "Name, titles, photo and bio",
     path: "/profile",

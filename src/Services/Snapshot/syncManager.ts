@@ -14,6 +14,16 @@ import {
 import { syncFeedback } from "./feedbackSync";
 
 import {
+    applyItems,
+    getHistorySnapshot,
+    missingItems,
+    saveHistoryEntry,
+    type DeletedMatch,
+    type ItemPick,
+    type RestoreItem,
+} from "./syncHistory";
+
+import {
     doc,
     getDoc,
     setDoc,
@@ -254,6 +264,10 @@ async function syncPersonalSnapshot(
             resolvedSnapshot
         );
 
+    await saveHistoryEntry(
+        normalizedCloudSnapshot
+    );
+
     // --------------------------------------------------
     // 10. Push exactly the resolved state to Firebase.
     // --------------------------------------------------
@@ -295,6 +309,128 @@ export async function sync(
     }
 
     return snapshot;
+}
+
+// ★★★★★ CHANGED 11/06/2026 ★★★★★ — NEW: shared restore step. Adds the
+// items to the current Snapshot, removes their deletion records, writes
+// them to local storage, and pushes to the cloud.
+async function applyRestore(
+    userId: string,
+    getItems: (current: Snapshot) => RestoreItem[]
+): Promise<{ snapshot: Snapshot; restoredCount: number }> {
+
+    const cloudSnapshot =
+        await receiveSnapshot(userId);
+
+    const localSnapshot =
+        await processCurrentSnapshot(userId);
+
+    const baseSnapshot =
+        localSnapshot ?? cloudSnapshot;
+
+    if (baseSnapshot === null) {
+        throw new Error(
+            "[sync] Nothing to restore into: no local or cloud Snapshot."
+        );
+    }
+
+    const current =
+        normalizeSnapshot(
+            baseSnapshot,
+            userId
+        );
+
+    const items =
+        getItems(current);
+
+    if (items.length === 0) {
+        return { snapshot: current, restoredCount: 0 };
+    }
+
+    if (cloudSnapshot !== null) {
+        await saveHistoryEntry(
+            normalizeSnapshot(
+                cloudSnapshot,
+                userId
+            )
+        );
+    }
+
+    const withItems =
+        applyItems(
+            current,
+            items
+        );
+
+    saveCurrentSnapshot(
+        withItems
+    );
+
+    const restoredSnapshot =
+        await restoreSnapshotToLocalStorage(
+            withItems
+        );
+
+    await sendSnapshot(
+        restoredSnapshot
+    );
+
+    return {
+        snapshot: restoredSnapshot,
+        restoredCount: items.length,
+    };
+}
+
+
+// ★★★★★ CHANGED 11/06/2026 ★★★★★ — NEW: restore from a saved history
+// entry everything the current Snapshot is missing, or only the picked
+// items.
+export async function restoreFromHistory(
+    userId: string,
+    historyId: string,
+    picks?: ItemPick[]
+): Promise<{ snapshot: Snapshot; restoredCount: number }> {
+
+    const source =
+        await getHistorySnapshot(
+            userId,
+            historyId
+        );
+
+    if (source === null) {
+        throw new Error(
+            `[sync] History entry ${historyId} was not found.`
+        );
+    }
+
+    return applyRestore(
+        userId,
+        current => missingItems(current, source, picks)
+    );
+}
+
+
+// ★★★★★ CHANGED 11/06/2026 ★★★★★ — NEW: bring back deleted items found by
+// findDeletedItems(). Matches with no saved copy (item === null) are
+// skipped.
+export async function restoreDeletedItems(
+    userId: string,
+    matches: DeletedMatch[]
+): Promise<{ snapshot: Snapshot; restoredCount: number }> {
+
+    const items: RestoreItem[] =
+        matches
+            .filter(match => match.item !== null)
+            .map(match => ({
+                collection: match.collection,
+                id: match.id,
+                item: match.item,
+            }));
+
+    return applyRestore(
+        userId,
+        () => items
+    );
 }
 
 

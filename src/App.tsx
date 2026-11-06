@@ -56,6 +56,7 @@ import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
 import InvoicePage from "./pages/InvoicePage.tsx";
 import CalendarPage from "./pages/CalendarPage";
 import FeedbackPage from "./pages/FeedbackPage";
+import DeletedPage from "./pages/DeletedPage";
 import { createCalendarEventsFromTasks } from "./Features/Calendar/calendar";
 import type { CalendarEvent } from "./Features/Calendar/calendar";
 import {
@@ -188,6 +189,7 @@ function MainApplication(
           ) : (
             <div>Sign in to access Community Feedback.</div>
          )}/>
+        <Route  path="/settings/deleted" element={<DeletedPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/settings/appearance"
