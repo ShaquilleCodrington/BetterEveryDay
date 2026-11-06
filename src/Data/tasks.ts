@@ -33,6 +33,65 @@ export const isChecklistComplete = (checklist: ChecklistItem[]): boolean => {
   return filledItems.length > 0 && filledItems.every((item) => item.checked);
 };
 
+// 2026-11-05 — A task counts as done if ANY of the three signals says so:
+// the completed flag, the "Completed" status, or an all-checked checklist.
+// This keeps old/stale data (flag and status disagreeing) from letting a
+// finished task keep moving forward.
+export const isTaskDone = (task: Task): boolean =>
+  task.completed ||
+  task.status === "Completed" ||
+  isChecklistComplete(task.checklist);
+
+// 2026-11-05 — Completion date rules, in one place.
+// A completion date that is already set (assigned manually) wins; otherwise
+// it is now. The due date is anchored to that completion date, which is
+// today for a normal completion.
+const getCompletionStamp = (
+  task: Task,
+  today: string
+): { completedAt: string; dueDate: string } => {
+  if (task.completedAt) {
+    return {
+      completedAt: task.completedAt,
+      dueDate: createCalendarDate(new Date(task.completedAt)),
+    };
+  }
+
+  return { completedAt: new Date().toISOString(), dueDate: today };
+};
+
+// 2026-11-05 — Brings a done task into one consistent state:
+// completed = true, status = "Completed", completedAt set, dueDate anchored.
+// A task that is already fully settled is returned untouched, so a
+// completed task's due date is never moved again on later runs.
+// Also export-ready for the Edit Task save handler: call it when status
+// is set to "Completed" so the due date becomes today at that moment.
+export const settleCompletedTask = (
+  task: Task,
+  today: string = createCalendarDate(new Date())
+): Task => {
+  if (task.completed && task.status === "Completed") {
+    return task;
+  }
+
+  // Already marked completed (older data) but status is stale: fix the
+  // status only. Its due date and completion date are left exactly as is.
+  if (task.completed) {
+    return { ...task, status: "Completed" };
+  }
+
+  // Newly completed (status set to Completed, or checklist all checked).
+  const stamp = getCompletionStamp(task, today);
+
+  return {
+    ...task,
+    completed: true,
+    status: "Completed",
+    completedAt: stamp.completedAt,
+    dueDate: stamp.dueDate,
+  };
+};
+
 // Call from the checklist change handler instead of only replacing the
 // checklist. It acts only when the checklist flips between complete and
 // not complete, so a manual "Completed" is left alone otherwise.
@@ -45,12 +104,17 @@ export const applyChecklistChange = (
   const now = new Date().toISOString();
 
   if (!wasComplete && isComplete && !task.completed) {
+    // 2026-11-05 — All items checked: complete the task, set the due date
+    // to today (or the manually assigned completion date), stop moving.
+    const stamp = getCompletionStamp(task, createCalendarDate(new Date()));
+
     return {
       ...task,
       checklist,
       completed: true,
       status: "Completed",
-      completedAt: now,
+      completedAt: stamp.completedAt,
+      dueDate: stamp.dueDate,
       updatedAt: now,
     };
   }
@@ -76,8 +140,11 @@ export const carryTaskForward = (
   task: Task,
   today: string = createCalendarDate(new Date())
 ): Task => {
-  if (task.completed) {
-    return task;
+
+  // 2026-11-05 — Done tasks never move forward, whatever stale state they
+  // carry. Settle them once (due date = completion date), then leave them.
+  if (isTaskDone(task)) {
+    return settleCompletedTask(task, today);
   }
 
   if (!isValidCalendarDate(task.dueDate)) {

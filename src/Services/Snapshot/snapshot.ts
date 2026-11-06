@@ -24,6 +24,11 @@ import {
 // 10/09/2026 — Invoices are now part of the Snapshot. Adjust these two paths to match your folders.
 import type { InvoiceData } from "../../Features/invoice/types";
 import { getInvoices } from "../../Features/invoice/invoiceStorage";
+import type { Comment, CommentLike } from "../../Features/feedback/types";
+import {
+    loadComments,
+    loadCommentLikes,
+} from "../../Features/feedback/storage/commentStorage";
 
 // 2026-08-23 — Define the local storage key for the latest winning Snapshot.
 const CURRENT_SNAPSHOT_KEY = "currentSnapshot";
@@ -40,6 +45,8 @@ export interface DeletedItems {
     journeys: Record<string, string>;
     journeyFolders: Record<string, string>;
     invoices: Record<string, string>;
+    comments: Record<string, string>;
+    commentLikes: Record<string, string>;
 }
 
 export type DeletedCollection = keyof DeletedItems;
@@ -69,6 +76,9 @@ export interface Snapshot {
     // 10/09/2026 — Added. Snapshots created before this field existed
     // won't have it; normalizeSnapshot() fills in [] for them.
     invoices: InvoiceData[];
+    comments: Comment[];
+    commentLikes: CommentLike[];
+
     deleted: DeletedItems;
 
     createdAt: string;
@@ -85,6 +95,8 @@ export function emptyDeleted(): DeletedItems {
         journeys: {},
         journeyFolders: {},
         invoices: {},
+        comments: {},
+        commentLikes: {},
     };
 }
 
@@ -101,6 +113,8 @@ export function normalizeDeleted(
         journeys: { ...(deleted?.journeys ?? {}) },
         journeyFolders: { ...(deleted?.journeyFolders ?? {}) },
         invoices: { ...(deleted?.invoices ?? {}) },
+        comments: { ...(deleted?.comments ?? {}) },
+        commentLikes: { ...(deleted?.commentLikes ?? {}) },
     };
 }
 // Union of two deletion records. A deletion known to either side is kept.
@@ -182,6 +196,8 @@ function recordDeletions(
     mark("journeys", before.journeys ?? [], after.journeys ?? [], item => item.journeyId);
     mark("journeyFolders", before.journeyFolders ?? [], after.journeyFolders ?? [], item => item.id);
     mark("invoices", before.invoices ?? [], after.invoices ?? [], item => item.id);
+    mark("comments", before.comments ?? [], after.comments ?? [], item => item.id);
+    mark("commentLikes", before.commentLikes ?? [], after.commentLikes ?? [], item => item.id);
 
     return result;
 }
@@ -225,6 +241,18 @@ export async function createSnapshot(
     // InvoiceData shown to me has no userId. If it has one, filter here too.
     const invoices =
         getInvoices();
+
+    const comments =
+        loadComments().filter(
+            (comment) =>
+                comment.userId === userId
+        );
+
+    const commentLikes =
+        loadCommentLikes().filter(
+            (like) =>
+                like.userId === userId
+        );
 
     const tasks =
         allTasks.filter(
@@ -306,6 +334,8 @@ export async function createSnapshot(
         journeys,
 
         invoices,
+        comments,
+        commentLikes,
         deleted: emptyDeleted(),
 
 
@@ -366,6 +396,12 @@ export function normalizeSnapshot(
         // Snapshots have no invoices field.
         invoices:
             snapshot.invoices ?? [],
+
+        comments:
+            snapshot.comments ?? [],
+
+        commentLikes:
+            snapshot.commentLikes ?? [],
 
         deleted:
             normalizeDeleted(
@@ -805,6 +841,81 @@ export function updateInvoiceSnapshot(
     };
 }
 
+// 11/05/2026 — Compare the comments this user wrote against the Snapshot.
+// `?? []` keeps this safe for older Snapshots that have no comments field.
+export function updateCommentSnapshot(
+    snapshot: Snapshot
+): Snapshot {
+    const snapshotComments =
+        snapshot.comments ?? [];
+
+    const currentComments = loadComments().filter(
+        comment => comment.userId === snapshot.userId
+    );
+
+    const changed =
+        currentComments.length !== snapshotComments.length ||
+        currentComments.some(currentComment => {
+            const snapshotComment =
+                snapshotComments.find(
+                    comment => comment.id === currentComment.id
+                );
+
+            return (
+                !snapshotComment ||
+                currentComment.updatedAt !==
+                    snapshotComment.updatedAt
+            );
+        });
+
+    if (!changed) {
+        return snapshot;
+    }
+
+    return {
+        ...snapshot,
+        comments: currentComments,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
+// 11/05/2026 — Compare the likes this user has given against the Snapshot.
+export function updateCommentLikeSnapshot(
+    snapshot: Snapshot
+): Snapshot {
+    const snapshotLikes =
+        snapshot.commentLikes ?? [];
+
+    const currentLikes = loadCommentLikes().filter(
+        like => like.userId === snapshot.userId
+    );
+
+    const changed =
+        currentLikes.length !== snapshotLikes.length ||
+        currentLikes.some(currentLike => {
+            const snapshotLike =
+                snapshotLikes.find(
+                    like => like.id === currentLike.id
+                );
+
+            return (
+                !snapshotLike ||
+                currentLike.updatedAt !==
+                    snapshotLike.updatedAt
+            );
+        });
+
+    if (!changed) {
+        return snapshot;
+    }
+
+    return {
+        ...snapshot,
+        commentLikes: currentLikes,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
 // 2026-08-23 — Compare all local objects against the current Snapshot and produce the newest Snapshot state.
 export async function updateCurrentSnapshot(
     snapshot: Snapshot
@@ -840,12 +951,29 @@ export async function updateCurrentSnapshot(
 
     updatedSnapshot =
         updateJourneyFolderSnapshot(updatedSnapshot);
+// 11/05/2026 — Feedback board: the comments this user wrote and
+    // the likes this user gave.
+    updatedSnapshot =
+        updateCommentSnapshot(updatedSnapshot);
+
+    updatedSnapshot =
+        updateCommentLikeSnapshot(updatedSnapshot);
 
     // Anything that was in the original Snapshot and is gone now was
     // deleted locally. Record it so it can never come back.
+    const deleted =
+        recordDeletions(snapshot, updatedSnapshot);
+
+    // 11/05/2026 — A like's ID is always userId_commentId, so un-liking
+    // and then liking again brings the same ID back. A like that exists
+    // again is not deleted, so clear its old deletion record.
+    for (const like of updatedSnapshot.commentLikes ?? []) {
+        delete deleted.commentLikes[like.id];
+    }
+
     updatedSnapshot = {
         ...updatedSnapshot,
-        deleted: recordDeletions(snapshot, updatedSnapshot),
+        deleted,
     };
 
     return updatedSnapshot;

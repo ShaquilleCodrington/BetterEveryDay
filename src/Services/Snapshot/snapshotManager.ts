@@ -39,6 +39,14 @@ import {
     saveInvoices,
 } from "../../Features/invoice/invoiceStorage";
 
+// 11/05/2026 — Adjust this path to match your folders.
+import {
+    loadComments,
+    saveComments,
+    loadCommentLikes,
+    saveCommentLikes,
+} from "../../Features/feedback/storage/commentStorage";
+
 export interface ReconcileOptions {
     baseline?: unknown;
 }
@@ -266,6 +274,23 @@ export function reconcileSnapshots(
                 byId
             ),
 
+         // 11/05/2026 — This user's own comments and likes.
+        comments:
+            reconcileCollection(
+                localSnapshot.comments ?? [],
+                cloudSnapshot.comments ?? [],
+                deleted.comments,
+                byId
+            ),
+
+        commentLikes:
+            reconcileCollection(
+                localSnapshot.commentLikes ?? [],
+                cloudSnapshot.commentLikes ?? [],
+                deleted.commentLikes,
+                byId
+            ),
+
         // ★★★★★ CHANGED 10/25/2026 ★★★★★ — NEW: save the merged list,
         // minus anything older than the retention period.
         deleted:
@@ -319,6 +344,12 @@ export async function restoreSnapshotToLocalStorage(
 
     const currentInvoices =
         getInvoices();
+
+    const currentComments =
+        loadComments();
+        
+    const currentCommentLikes =
+        loadCommentLikes();
 
     const restoredTasks =
         reconcileCollection(
@@ -384,6 +415,22 @@ export async function restoreSnapshotToLocalStorage(
             byId
         );
 
+    const restoredComments =
+        reconcileCollection(
+            currentComments,
+            snapshot.comments ?? [],
+            deleted.comments,
+            byId
+        );
+
+    const restoredCommentLikes =
+        reconcileCollection(
+            currentCommentLikes,
+            snapshot.commentLikes ?? [],
+            deleted.commentLikes,
+            byId
+        );
+
     await saveProfile(snapshot.profile);
 
     saveTasks(
@@ -416,6 +463,14 @@ export async function restoreSnapshotToLocalStorage(
 
     saveInvoices(
         restoredInvoices
+    );
+
+     saveComments(
+        restoredComments
+    );
+
+    saveCommentLikes(
+        restoredCommentLikes
     );
 
     const restoredSnapshot: Snapshot = {
@@ -453,6 +508,16 @@ export async function restoreSnapshotToLocalStorage(
 
         // ★★★★★ CHANGED 10/25/2026 ★★★★★ — NEW
         deleted,
+
+        comments:
+            restoredComments.filter(
+                comment => comment.userId === snapshot.userId
+            ),
+
+        commentLikes:
+            restoredCommentLikes.filter(
+                like => like.userId === snapshot.userId
+            ),
 
         updatedAt:
             new Date().toISOString(),

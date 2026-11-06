@@ -10,6 +10,9 @@ import {
     type Snapshot,
 } from "./snapshot";
 
+// 11/05/2026 — Feedback board sync (shared Firestore collections).
+import { syncFeedback } from "./feedbackSync";
+
 import {
     doc,
     getDoc,
@@ -104,7 +107,7 @@ export async function sendSnapshot(
     }
 }
 
-// Main synchronization orchestration.
+// Main synchronization orchestration for the user's personal Snapshot.
 //
 // Local working state is captured first.
 // Cloud state is retrieved second.
@@ -122,7 +125,10 @@ export async function sendSnapshot(
 // ★★★★★ CHANGED 10/25/2026 ★★★★★ — The sync baseline was removed.
 // Deletions are recorded inside the Snapshot (the `deleted` field), merged
 // from both sides, and always win during reconcile and restore.
-export async function sync(
+//
+// 11/05/2026 — Renamed from sync(). sync() below now runs this and then
+// the feedback board sync.
+async function syncPersonalSnapshot(
     userId: string,
     _options: SyncOptions = {}
 ): Promise<Snapshot | null> {
@@ -258,6 +264,36 @@ export async function sync(
     // 11. Return final state.
     // --------------------------------------------------
     return restoredSnapshot;
+}
+
+
+// 11/05/2026 — Full sync: the personal Snapshot first, then the shared
+// feedback board. A feedback board failure is logged and never blocks
+// the personal sync; the next sync catches up.
+export async function sync(
+    userId: string,
+    options: SyncOptions = {}
+): Promise<Snapshot | null> {
+
+    const snapshot =
+        await syncPersonalSnapshot(
+            userId,
+            options
+        );
+
+    try {
+        await syncFeedback(
+            userId,
+            snapshot?.deleted
+        );
+    } catch (error) {
+        console.error(
+            "[sync] Feedback board sync failed, will catch up on the next one:",
+            error
+        );
+    }
+
+    return snapshot;
 }
 
 

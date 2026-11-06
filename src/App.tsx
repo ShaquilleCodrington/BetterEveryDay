@@ -55,6 +55,7 @@ import HelpPage from "./pages/HelpPage";
 import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
 import InvoicePage from "./pages/InvoicePage.tsx";
 import CalendarPage from "./pages/CalendarPage";
+import FeedbackPage from "./pages/FeedbackPage";
 import { createCalendarEventsFromTasks } from "./Features/Calendar/calendar";
 import type { CalendarEvent } from "./Features/Calendar/calendar";
 import {
@@ -182,6 +183,11 @@ function MainApplication(
         <Route path="/congruence" element={<CongruencePage />} />
         <Route path="/invoice" element={<InvoicePage />} />
         <Route path="/calendar" element={<CalendarRoute />} />
+        <Route  path="/feedback" element={ currentUser ? (
+            <FeedbackPage userId={currentUser.uid} />
+          ) : (
+            <div>Sign in to access Community Feedback.</div>
+         )}/>
         <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/settings/appearance"
