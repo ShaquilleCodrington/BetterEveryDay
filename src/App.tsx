@@ -69,6 +69,7 @@ import type { ChecklistItem } from "./Components/Checklist";
 import type { Task, TaskOutletContext } from "./Data/tasks";
 import { applyChecklistChange, refreshTaskLifecycle } from "./Data/tasks";
 import "./Css/App.css";
+import { initializeDefaults } from "./Data/defaultContent.ts";
 
 type AuthStatus = | "loading" |"login" ;
 
@@ -228,7 +229,7 @@ type SidebarState = "closed" | "collapsed" | "open";
 
    const [sidebarState, setSidebarState] =
      useState<SidebarState>("open");
-       // 10/09/2026 — Sync when the user leaves a page. The cleanup runs when
+      // 10/09/2026 — Sync when the user leaves a page. The cleanup runs when
   // the path changes (leaving the old page) and when MainLayout unmounts
   // (for example, going to the Timer page, which sits outside MainLayout).
   const location = useLocation();
@@ -247,9 +248,14 @@ type SidebarState = "closed" | "collapsed" | "open";
 
   // 2026-10-18 — Single source of truth for tasks. Every page reads and
   // changes tasks through this state; nothing else keeps its own copy.
-  const [tasks, setTasks] = useState<Task[]>(() =>
-    refreshTaskLifecycle(loadTasks())
-  );
+  // ★★★★★ CHANGED 11/09/2026 ★★★★★ — Default starter content runs BEFORE
+  // the tasks are read, so the state below already includes it. Each
+  // default is created once per user and then left alone.
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    initializeDefaults(currentUser?.uid ?? null);
+
+    return refreshTaskLifecycle(loadTasks());
+  });
 
   useEffect(() => {
     saveTasks(tasks);
