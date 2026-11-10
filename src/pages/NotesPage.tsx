@@ -31,6 +31,8 @@ export default function NotesPage({
     pages,
     blocks,
     tasks,
+    // 2026-11-10: selectedPage now comes from the hook (local pages.find removed)
+    selectedPage,
 
     selectedNotebookId,
     focusedBlockId,
@@ -73,9 +75,7 @@ export default function NotesPage({
 
 
 
-const selectedPage =
-    pages.find((page) => page.id === selectedPageId);
-
+// 2026-11-10: local selectedPage (pages.find) removed — provided by useNotesPageFunctions
 const [notebookBrowserCollapsed, setNotebookBrowserCollapsed] =
     useState(false);
 

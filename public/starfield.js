@@ -35,9 +35,9 @@
   // ── Active check ─────────────────────────────────────────────────────────
   function isActive() {
     if (IS_TIMER) {
-      return (localStorage.getItem('timer-background') ?? 'starfield') === 'starfield';
+      return (localStorage.getItem('timer-background') ?? 'city') === 'starfield';
     }
-    return (localStorage.getItem('background-mode') ?? 'starfield') === 'starfield';
+    return (localStorage.getItem('background-mode') ?? 'city') === 'starfield';
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────

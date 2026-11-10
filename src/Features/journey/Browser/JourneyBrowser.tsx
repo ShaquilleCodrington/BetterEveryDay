@@ -6,6 +6,13 @@ import { useConfirmDelete } from "../../../Components/ConfirmDialog";
 import SortControl from "../../../Components/SortControl";
 import type { SortDirection } from "../../../Components/SortControl";
 import Tooltip from "../../../Components/Tooltip";
+// 2026-11-10: reuse Notebook browser behavior instead of duplicating it
+import
+{
+    useNotebookBrowserState,
+    getNotebookPages,
+}
+from "../../notes/browser/useNotebookBrowserState";
 
 import
 {
@@ -106,30 +113,61 @@ export default function JourneyBrowser(
 
 {
 
-    const [editingFolderId, setEditingFolderId] =
-        useState<string | null>(null);
+    // 2026-11-10: rename + add-existing behavior now comes from the Notebook hook
+    // (previously separate useState calls and handlers duplicated here)
+    // A Journey is backed by a Notebook; the Notebook is what the
+    // shared browser behavior (rename, add-existing) operates on.
+    const selectedNotebookId =
+        journeys.find(
+            (journey) =>
+                journey.journeyId === selectedJourneyId
+        )?.notebookId ?? null;
 
-    const [editingFolderTitle, setEditingFolderTitle] =
-        useState("");
+    const
+    {
+        editingFolderId,
+        editingFolderTitle,
+        setEditingFolderTitle,
+        startEditingFolder,
+        commitFolderRename,
 
-    const [editingJourneyId, setEditingJourneyId] =
-        useState<string | null>(null);
+        editingNotebookId,
+        editingTitle,
+        setEditingTitle,
+        startEditingNotebook,
+        commitNotebookRename,
 
-    const [editingTitle, setEditingTitle] =
-        useState("");
+        editingPageId,
+        editingPageTitle,
+        setEditingPageTitle,
+        startEditingPage,
+        commitPageRename,
 
-    const [editingPageId, setEditingPageId] =
-        useState<string | null>(null);
+        showAddExistingPopup,
+        setShowAddExistingPopup,
+        handleAddExistingNotebook,
 
-    const [editingPageTitle, setEditingPageTitle] =
-        useState("");
+        handleRenameButtonClick,
+    } = useNotebookBrowserState({
+        notebooks,
+        folders,
+        pages,
+
+        selectedFolderId,
+        selectedNotebookId,
+        selectedPageId,
+
+        onRenameNotebook,
+        onRenamePage,
+        onRenameFolder,
+        onAssignNotebookToFolder,
+
+        untitledNotebookTitle: "Untitled Journey",
+    });
 
 
     const { requestDelete, confirmDialog } =
         useConfirmDelete();
-
-    const [showAddExistingPopup, setShowAddExistingPopup] =
-    useState(false);
 
 
     const [sortField, setSortField] =
@@ -163,26 +201,22 @@ export default function JourneyBrowser(
         },
     ];
 
+    // 2026-11-10: single lookup replacing 4 repeated notebooks.find(...) calls
+    // A Journey is backed by exactly one Notebook.
+    function notebookOf(journey: Journey)
+    {
+        return notebooks.find((n) => n.id === journey.notebookId);
+    }
+
 const looseJourneys =
     journeys.filter(
         (journey) =>
         {
-            const notebook =
-                notebooks.find(
-                    n =>
-                    n.id === journey.notebookId
-                );
+            const notebook = notebookOf(journey);
 
             return notebook && !notebook.folderId;
         }
     );
-
-
-    const selectedFolder =
-        folders.find(
-            (folder) =>
-                folder.id === selectedFolderId
-        );
 
 
 
@@ -222,174 +256,11 @@ const looseJourneys =
         getSortedJourneys();
 
 
+    // 2026-11-10: startEditingFolder/commitFolderRename, startEditingJourney/
+    // commitJourneyRename, startEditingPage/commitPageRename, handleAddExistingJourney
+    // and handleRenameButtonClick removed — provided by useNotebookBrowserState.
 
-    function startEditingFolder(
-        folder: NotebookFolder
-    )
-    {
-        setEditingFolderId(folder.id);
-        setEditingFolderTitle(folder.title);
-    }
-
-
-
-    function commitFolderRename()
-    {
-        if(!editingFolderId)
-            return;
-
-
-        onRenameFolder(
-            editingFolderId,
-            editingFolderTitle.trim() ||
-            "Untitled Folder"
-        );
-
-
-        setEditingFolderId(null);
-    }
-
-
-
-    function startEditingJourney(
-        journey: Journey
-    )
-    {
-        const notebook =
-            notebooks.find(
-                (n) =>
-                    n.id === journey.notebookId
-            );
-
-
-        if(!notebook)
-            return;
-
-
-        setEditingJourneyId(
-            journey.journeyId
-        );
-
-
-        setEditingTitle(
-            notebook.title
-        );
-    }
-
-
-
-    function commitJourneyRename()
-    {
-        if(!editingJourneyId)
-            return;
-
-
-        const journey =
-            journeys.find(
-                (j) =>
-                    j.journeyId === editingJourneyId
-            );
-
-
-        if(!journey)
-            return;
-
-
-        onRenameNotebook(
-            journey.notebookId,
-            editingTitle.trim() ||
-            "Untitled Journey"
-        );
-
-
-        setEditingJourneyId(null);
-    }
-
-
-
-    function startEditingPage(
-        page: Page
-    )
-    {
-        setEditingPageId(page.id);
-        setEditingPageTitle(page.title);
-    }
-
-
-
-    function commitPageRename()
-    {
-        if(!editingPageId)
-            return;
-
-
-        onRenamePage(
-            editingPageId,
-            editingPageTitle.trim() ||
-            "Untitled Page"
-        );
-
-
-        setEditingPageId(null);
-    }
-
-    function handleAddExistingJourney(notebookId:string)
-{
-    if(!selectedFolderId)
-        return;
-
-    onAssignNotebookToFolder(
-        notebookId,
-        selectedFolderId
-    );
-
-    setShowAddExistingPopup(false);
-}
-
-
-    function handleRenameButtonClick()
-    {
-        if(selectedPageId)
-        {
-            const page =
-                pages.find(
-                    p =>
-                        p.id === selectedPageId
-                );
-
-
-            if(page)
-            {
-                startEditingPage(page);
-                return;
-            }
-        }
-
-
-        if(selectedJourneyId)
-        {
-            const journey =
-                journeys.find(
-                    j =>
-                        j.journeyId === selectedJourneyId
-                );
-
-
-            if(journey)
-            {
-                startEditingJourney(journey);
-                return;
-            }
-        }
-
-
-        if(selectedFolder)
-        {
-            startEditingFolder(
-                selectedFolder
-            );
-        }
-    }    function renderJourneyRow(
+    function renderJourneyRow(
         journey: Journey
     )
     {
@@ -397,21 +268,19 @@ const looseJourneys =
             selectedJourneyId === journey.journeyId;
 
 
-        const notebook =
-            notebooks.find(
-                (n) =>
-                    n.id === journey.notebookId
-            );
+        // 2026-11-10: notebookOf(journey)
+        const notebook = notebookOf(journey);
 
 
         if(!notebook)
             return null;
 
 
+        // 2026-11-10: page lookup via shared getNotebookPages
         const notebookPages =
-            pages.filter(
-                (page) =>
-                    page.notebookId === notebook.id
+            getNotebookPages(
+                pages,
+                notebook.id
             );
 
 
@@ -435,7 +304,7 @@ const looseJourneys =
                         onClick={() =>  
                                 onSelectedJourney(  journey.journeyId ) }
                         onDoubleClick={() =>
-                             startEditingJourney( journey ) }
+                             startEditingNotebook( notebook ) }
                         style={{
                             flex:1,
                             textAlign:"left",
@@ -455,8 +324,10 @@ const looseJourneys =
                         }}
                     >
 
+                        {/* 2026-11-10: inline rename uses shared notebook state
+                            (startEditingNotebook / commitNotebookRename) */}
                         {
-                            editingJourneyId === journey.journeyId
+                            editingNotebookId === notebook.id
                             ?
 
                             <input
@@ -469,14 +340,19 @@ const looseJourneys =
 
                                 onChange={(e) => setEditingTitle(
                                         e.target.value )
-                                }  onBlur={ commitJourneyRename
+                                }  onBlur={() =>
+                                    commitNotebookRename(
+                                        notebook.id
+                                    )
                                 }
 
                                 onKeyDown={(e) =>
                                 {
                                     if(e.key === "Enter")
                                     {
-                                        commitJourneyRename();
+                                        commitNotebookRename(
+                                            notebook.id
+                                        );
                                     }
                                 }}
 
@@ -812,13 +688,8 @@ const looseJourneys =
                         sortedJourneys.filter(
                             (journey) =>
                             {
-                                const notebook =
-                                    notebooks.find(
-                                        n =>
-                                        n.id === journey.notebookId
-                                    );
-
-                                return notebook?.folderId === folder.id;
+                                // 2026-11-10: notebookOf(journey)
+                                return notebookOf(journey)?.folderId === folder.id;
                             }
                         );
 
@@ -936,11 +807,8 @@ const looseJourneys =
                 looseJourneys.map(
                     (journey) =>
                     {
-                        const notebook =
-                            notebooks.find(
-                                n =>
-                                n.id === journey.notebookId
-                            );
+                        // 2026-11-10: notebookOf(journey); click uses shared handleAddExistingNotebook
+                        const notebook = notebookOf(journey);
 
                         if(!notebook)
                             return null;
@@ -950,7 +818,7 @@ const looseJourneys =
                             <button
                                 key={journey.journeyId}
                                 onClick={() =>
-                                    handleAddExistingJourney(
+                                    handleAddExistingNotebook(
                                         notebook.id
                                     )
                                 }

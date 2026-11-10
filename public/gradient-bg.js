@@ -38,8 +38,8 @@
   const IS_TIMER = window.location.hash.includes('/timer');
 
   function isActive() {
-    if (IS_TIMER) return (localStorage.getItem('timer-background') ?? 'starfield') === 'gradient';
-    return (localStorage.getItem('background-mode') ?? 'starfield') === 'gradient';
+    if (IS_TIMER) return (localStorage.getItem('timer-background') ?? 'city') === 'gradient';
+    return (localStorage.getItem('background-mode') ?? 'city') === 'gradient';
   }
 
   function hslStr(h, s, l) {

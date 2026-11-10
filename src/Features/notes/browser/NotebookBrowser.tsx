@@ -8,10 +8,14 @@
 // ======================================================
 
 import type { NotebookFolder, Notebook, Page } from "../types";
-import { useState } from "react";
 import { NotebookTabs, PanelLeft } from "lucide-react";
 import { useConfirmDelete } from "../../../Components/ConfirmDialog";
 import Tooltip from "../../../Components/Tooltip";
+// 2026-11-10: shared notebook browser state (rename / add-existing / page lookup)
+import {
+    useNotebookBrowserState,
+    getNotebookPages,
+} from "./useNotebookBrowserState";
 
 interface NotebookBrowserProps
 {
@@ -79,134 +83,52 @@ export default function NotebookBrowser(
 }: NotebookBrowserProps)
 
 {
-const [editingFolderId, setEditingFolderId] =
-    useState<string | null>(null);
+// 2026-11-10: rename + add-existing state and handlers moved to useNotebookBrowserState
+// (previously ~13 useState calls and 9 functions defined here)
+const {
+    editingFolderId,
+    editingFolderTitle,
+    setEditingFolderTitle,
+    startEditingFolder,
+    commitFolderRename,
 
-const [editingFolderTitle, setEditingFolderTitle] =
-    useState("");
+    editingNotebookId,
+    editingTitle,
+    setEditingTitle,
+    startEditingNotebook,
+    commitNotebookRename,
 
-const [editingNotebookId, setEditingNotebookId] =
-    useState<string | null>(null);
+    editingPageId,
+    editingPageTitle,
+    setEditingPageTitle,
+    startEditingPage,
+    commitPageRename,
 
-const [editingPageId, setEditingPageId] =
-        useState<string | null>(null);
+    showAddExistingPopup,
+    setShowAddExistingPopup,
+    handleAddExistingNotebook,
 
-const [editingPageTitle, setEditingPageTitle] =
-        useState("");
+    handleRenameButtonClick,
+} = useNotebookBrowserState({
+    notebooks,
+    folders,
+    pages,
 
-const [editingTitle, setEditingTitle] =
-    useState("");
+    selectedFolderId,
+    selectedNotebookId,
+    selectedPageId,
 
-
-
-const [showAddExistingPopup, setShowAddExistingPopup] = useState(false);
+    onRenameNotebook,
+    onRenamePage,
+    onRenameFolder,
+    onAssignNotebookToFolder,
+});
 
 const { requestDelete, confirmDialog } = useConfirmDelete();
 
 const looseNotebooks = notebooks.filter(
                     (notebook) => !notebook.folderId
                 );
-
-const selectedFolder =
-            folders.find(
-                (folder) =>
-                    folder.id === selectedFolderId
-            );
-
-
-    function startEditingFolder(folder: NotebookFolder)
-    {
-        setEditingFolderId(folder.id);
-        setEditingFolderTitle(folder.title);
-    }
-
-    function commitFolderRename()
-    {
-        if (!editingFolderId) return;
-
-        onRenameFolder(
-            editingFolderId,
-            editingFolderTitle.trim() || "Untitled Folder"
-        );
-
-        setEditingFolderId(null);
-    }
-
-function startEditingNotebook(notebook: Notebook)
-    {
-        setEditingNotebookId(notebook.id);
-        setEditingTitle(notebook.title);
-    }
-
-    function commitNotebookRename(notebookId: string)
-    {
-        onRenameNotebook(
-            notebookId,
-            editingTitle.trim() || "Untitled Notebook"
-        );
-
-        setEditingNotebookId(null);
-    }
-
-   
-    function startEditingPage(page: Page)
-    {
-        setEditingPageId(page.id);
-        setEditingPageTitle(page.title);
-    }
-
-    function commitPageRename()
-    {
-        if (!editingPageId) return;
-
-        onRenamePage(
-            editingPageId,
-            editingPageTitle.trim() || "Untitled Page"
-        );
-
-        setEditingPageId(null);
-    }
-
-    function handleRenameButtonClick()
-    {
-        if (selectedPageId)
-        {
-            const page = pages.find((p) => p.id === selectedPageId);
-
-            if (page)
-            {
-                startEditingPage(page);
-                return;
-            }
-        }
-
-        if (selectedNotebookId)
-        {
-            const notebook = notebooks.find(
-                (n) => n.id === selectedNotebookId
-            );
-
-            if (notebook)
-            {
-                startEditingNotebook(notebook);
-                return;
-            }
-        }
-
-        if (selectedFolder)
-        {
-            startEditingFolder(selectedFolder);
-        }
-    }
-
-
-    function handleAddExistingNotebook(notebookId: string)
-    {
-        if (!selectedFolderId) return;
-
-        onAssignNotebookToFolder(notebookId, selectedFolderId);
-        setShowAddExistingPopup(false);
-    }
 
     {/* Displays one notebook in the sidebar.
             Handles notebook selection.
@@ -217,9 +139,8 @@ function startEditingNotebook(notebook: Notebook)
     {
         const isSelected = selectedNotebookId === notebook.id;
 
-        const notebookPages = pages.filter(
-            (page) => page.notebookId === notebook.id
-        );
+        // 2026-11-10: page lookup via shared getNotebookPages
+        const notebookPages = getNotebookPages(pages, notebook.id);
 
         return (
             <div

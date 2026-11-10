@@ -21,8 +21,8 @@
   const IS_TIMER = window.location.hash.includes('/timer');
 
   function isActive() {
-    if (IS_TIMER) return (localStorage.getItem('timer-background') ?? 'starfield') === 'city';
-    return (localStorage.getItem('background-mode') ?? 'starfield') === 'city';
+    if (IS_TIMER) return (localStorage.getItem('timer-background') ?? 'city') === 'city';
+    return (localStorage.getItem('background-mode') ?? 'city') === 'city';
   }
 
   // ── Visibility + loop control ──────────────────────────────────────────

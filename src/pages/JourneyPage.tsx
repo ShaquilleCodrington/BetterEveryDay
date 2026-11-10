@@ -15,7 +15,7 @@ import {
 
 import JourneyBrowser from "../Features/journey/Browser/JourneyBrowser";
 
-import { saveNotebooks} from "../Features/notes/storage/notebookStorage";
+// 2026-11-10: saveNotebooks import removed — notebook creation now goes through handleAddNotebook
 import { useNotesPageFunctions } from "../Features/notes/editor/NotesPageFunctions";
 import BlockList from "../Features/notes/editor/BlockList";
 import StartSessionPopup from "../Features/journey/Session/StartSessionPopup";
@@ -88,6 +88,8 @@ export default function JourneyPage()
     pages,
     blocks,
     tasks,
+    // 2026-11-10: selectedPage now comes from the Notebook hook (local pages.find removed)
+    selectedPage,
 
     focusedBlockId,
     showTaskPicker,
@@ -108,7 +110,12 @@ export default function JourneyPage()
     handleDeletePage,
     handleRenamePage,
 
-    
+    // 2026-11-10: Notebook-owned behavior; Journey wraps/uses these below.
+    handleAddNotebook,
+    handleRenameNotebook: renameNotebook,
+    handleDeleteNotebook: deleteNotebook,
+
+
     handleCreateFolder,
     handleDeleteFolder,
     handleSelectedFolder,
@@ -116,7 +123,7 @@ export default function JourneyPage()
     handleAssignNotebookToFolder,
     handleRemoveNotebookFromFolder,
     selectedFolderId,
-    reloadData,
+    // 2026-11-10: reloadData removed from destructure (no longer used here)
 
 } = useNotesPageFunctions({
     selectedPageId,
@@ -170,24 +177,17 @@ export default function JourneyPage()
 
 
 
-        const updatedNotebooks =
-        [
-            ...notebooks,
-            notebook,
-        ];
-
-
-
         saveJourneys(
             updatedJourneys
         );
-       
+
         setJourneys(
             updatedJourneys
         );
 
-        saveNotebooks(updatedNotebooks);
-        reloadData();
+        // 2026-11-10: notebook added through the Notebook implementation
+        // (replaces manual notebooks array + saveNotebooks + reloadData)
+        handleAddNotebook(notebook);
 
 
 
@@ -222,29 +222,8 @@ export default function JourneyPage()
 
 
 
-    // ======================================================
-    // SELECT PAGE
-    // ======================================================
-
-    function handleSelectPage(
-        pageId:string
-    )
-    {
-        setSelectedPageId(
-            pageId
-        );
-
-          const session =
-        getActiveSessionForPage(
-            pageId
-        );
-
-    setActiveSession(
-        session
-    );
-    }
-
-
+    // 2026-11-10: handleSelectPage removed — the selectedPageId effect below
+    // (ACTIVE SESSION) already sets activeSession.
 
     // ======================================================
     // SESSION
@@ -488,25 +467,18 @@ useEffect(() =>
                 journey.notebookId === notebookId
         );
 
-        const updatedNotebooks =
-            notebooks.filter(
-                (notebook)=>
-                    notebook.id !== notebookId
-            );
+        // 2026-11-10: Notebook removal handled by the Notebook implementation
+        // (previously duplicated here: filter + saveNotebooks + reloadData).
+        deleteNotebook(notebookId);
 
-
+        // Journey-specific: drop the owning Journey record.
         const updatedJourneys =
             journeys.filter(
                 (journey)=>
                     journey.notebookId !== notebookId
             );
 
-
-
         saveJourneys(updatedJourneys);
-        saveNotebooks(updatedNotebooks);
-
-        reloadData();
 
         setJourneys(updatedJourneys
         );
@@ -535,34 +507,12 @@ useEffect(() =>
         title:string
     )
     {
-         const updatedAt =
+        // 2026-11-10: Notebook rename handled by the Notebook implementation
+        // (previously duplicated here: map + saveNotebooks + reloadData).
+        renameNotebook(notebookId, title);
+
+        const updatedAt =
             new Date().toISOString();
-
-
-        const updatedNotebooks =
-            notebooks.map(
-                (notebook)=>
-                {
-
-                    if(
-                        notebook.id === notebookId
-                    )
-                    {
-                        return {
-                            ...notebook,
-                            title,
-                            updatedAt,
-                        };
-                    }
-
-
-                    return notebook;
-
-                }
-            );
-
-        saveNotebooks(updatedNotebooks);
-        reloadData();
 
     // 2026-08-22: Propagate Notebook mutation to its owning Journey.
     const updatedJourneys =
@@ -594,12 +544,7 @@ useEffect(() =>
     // ======================================================
     // SELECTED PAGE, JOURNEY, NOTEBOOK
     // ======================================================
-
-    const selectedPage =
-        pages.find(
-            (page)=>
-                page.id === selectedPageId
-        );
+    // 2026-11-10: local selectedPage (pages.find) removed — provided by the Notebook hook
 
         const selectedJourney =
     journeys.find(
@@ -694,8 +639,9 @@ const journeyBrowserBasis = "22%";
     }
 
 
+    // 2026-11-10: was handleSelectPage
     onSelectedPage={
-        handleSelectPage
+        setSelectedPageId
     }
 
     onCreatePage={

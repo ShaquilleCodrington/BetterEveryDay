@@ -278,6 +278,20 @@ export function useNotesPageFunctions({
 
     
 
+    // 2026-11-10: NEW — appends and persists an already-built notebook. Journey builds its
+    // own notebook (via createJourney) and adds it through this.
+    function handleAddNotebook(notebook: Notebook)
+    {
+        const updatedNotebooks = [
+            ...notebooks,
+            notebook,
+        ];
+
+        setNotebooks(updatedNotebooks);
+        saveNotebooks(updatedNotebooks);
+    }
+
+    // 2026-11-10: now delegates the append/save to handleAddNotebook
     function handleCreateNotebook()
     {
         const notebook = createNotebook();
@@ -286,15 +300,9 @@ export function useNotesPageFunctions({
             ? { ...notebook, folderId: selectedFolderId }
             : notebook;
 
-        const updatedNotebooks = [
-            ...notebooks,
-            notebookToAdd,
-        ];
+        handleAddNotebook(notebookToAdd);
 
-        setNotebooks(updatedNotebooks);
-        saveNotebooks(updatedNotebooks);
-
-        setSelectedNotebookId(notebookToAdd.id);;
+        setSelectedNotebookId(notebookToAdd.id);
     }
 
     function handleSelectedNotebook(
@@ -1329,6 +1337,8 @@ export function useNotesPageFunctions({
         selectedPage,
 
         handleCreateNotebook,
+        // 2026-11-10: exposed for Journey
+        handleAddNotebook,
         handleSelectedNotebook,
         handleRenameNotebook,
 
