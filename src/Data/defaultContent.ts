@@ -17,6 +17,13 @@
 // gets created on every device with the same fixed ID, and a sync keeps
 // whichever copy has the newer updatedAt. With an old stamp, a real edit
 // always wins over a freshly created default.
+//
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — DEFAULTS_VERSION is part of every flag
+// key AND every fixed ID. Bumping it re-runs every default for every
+// user and creates a brand-new set of objects. The new IDs matter: a
+// deleted ID is never brought back by a sync, so reusing an ID that was
+// deleted would not work. Older copies are left alone; the user can
+// delete them.
 // ======================================================
 import { addTask, loadTasks } from "./taskStorage";
 import type { Task } from "./tasks";
@@ -47,12 +54,15 @@ import type {
     TaskBlock,
     TextBlock,
 } from "../Features/notes/types";
-// ★★★★★ CHANGED 11/09/2026 ★★★★★ — NEW IMPORTS: Journey defaults.
-import type { Journey } from "../Features/journey/types";
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — JourneyFolder type and folder
+// storage added to the Journey imports.
+import type { Journey, JourneyFolder } from "../Features/journey/types";
 import { createJourney } from "../Features/journey/Utils/JourneyFactory";
 import {
     loadJourneys,
     saveJourneys,
+    loadJourneyFolders,
+    saveJourneyFolders,
 } from "../Features/journey/Storage/journeyStorage";
 import {
     getPlanByJourneyId,
@@ -71,6 +81,11 @@ const DEFAULT_PRIORITY = "Medium";
 // Old on purpose (see the note at the top of the file).
 const DEFAULT_UPDATED_AT = "2026-01-01T00:00:00.000Z";
 
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — NEW: goes into every flag key and
+// every fixed ID. Change this value to run every default again, for
+// everyone, with fresh IDs.
+const DEFAULTS_VERSION = "r3";
+
 // ======================================================
 // Shared helpers
 // ======================================================
@@ -79,11 +94,18 @@ function getUserKey(userId: string | null): string {
     return userId ?? "guest";
 }
 
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — NEW: the user key plus the version.
+// Every fixed ID is built from this, so a new version means new IDs.
+function getIdKey(userId: string | null): string {
+    return `${getUserKey(userId)}-${DEFAULTS_VERSION}`;
+}
+
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — Flag key now includes DEFAULTS_VERSION.
 function getFlagKey(
     userId: string | null,
     defaultName: string
 ): string {
-    return `defaultInitialized:${getUserKey(userId)}:${defaultName}`;
+    return `defaultInitialized:${getUserKey(userId)}:${defaultName}:${DEFAULTS_VERSION}`;
 }
 
 // Default tasks are due tomorrow, so they show up on the calendar the
@@ -293,8 +315,8 @@ export function createDefaultTextBlock(
     };
 }
 
-// ★★★★★ CHANGED 11/09/2026 ★★★★★ — NEW: one list block, one bullet per
-// line. No trailing line break, which would add an empty extra bullet.
+// One list block, one bullet per line. No trailing line break, which
+// would add an empty extra bullet.
 // Keep items short: a wrapped item throws the bullet column out of line.
 export function createDefaultListBlock(
     id: string,
@@ -347,10 +369,15 @@ export function createDefaultTaskBlock(
 // ======================================================
 
 interface NotebookExperience {
-    // Journey notebooks have no folder.
+    // Journey notebooks have no notebook folder (the Journey itself
+    // lives in a Journey folder).
     folder?: { id: string; title: string };
     notebookId: string;
     notebookTitle: string;
+    // ★★★★★ CHANGED 11/10/2026 ★★★★★ — NEW, optional: a notebook that was
+    // already built elsewhere (the Journey's, from createJourney). When
+    // present it is saved as is instead of building a new one.
+    notebook?: Notebook;
     pageId: string;
     pageTitle: string;
     // Already carries its fixed IDs and its pageId.
@@ -371,6 +398,8 @@ function buildBlocks(
 
 // True only when the folder (if any), notebook, page and every block the
 // page lists are really in storage.
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — Also checks the notebook really
+// points at its folder.
 function isExperienceInStorage(
     experience: NotebookExperience
 ): boolean {
@@ -385,6 +414,10 @@ function isExperienceInStorage(
             item => item.id === experience.notebookId
         );
 
+    const inFolder =
+        folder === undefined ||
+        notebook?.folderId === folder.id;
+
     const page =
         loadPages().find(
             item => item.id === experience.pageId
@@ -395,6 +428,7 @@ function isExperienceInStorage(
     return (
         hasFolder &&
         notebook !== undefined &&
+        inFolder &&
         notebook.pageIds.includes(experience.pageId) &&
         page !== undefined &&
         experience.blocks.every(block =>
@@ -429,13 +463,14 @@ function saveNotebookExperience(
         loadNotebooks,
         saveNotebooks,
         [
-            createDefaultNotebook(
-                experience.notebookId,
-                experience.notebookTitle,
-                userId,
-                experience.folder?.id,
-                [experience.pageId]
-            ),
+            experience.notebook ??
+                createDefaultNotebook(
+                    experience.notebookId,
+                    experience.notebookTitle,
+                    userId,
+                    experience.folder?.id,
+                    [experience.pageId]
+                ),
         ]
     );
 
@@ -500,7 +535,7 @@ function initializeNotebookExperience(
 export function getDefaultPianoDayOneTaskId(
     userId: string | null
 ): string {
-    return `default-recharge-piano-day-one-${getUserKey(userId)}`;
+    return `default-recharge-piano-day-one-${getIdKey(userId)}`;
 }
 
 export function initializeDefaultRecharge(
@@ -526,7 +561,7 @@ export function initializeDefaultRecharge(
 function createPianoExperience(
     userId: string | null
 ): NotebookExperience {
-    const user = getUserKey(userId);
+    const user = getIdKey(userId);
     const pageId = `default-hobby-piano-day-one-page-${user}`;
 
     return {
@@ -597,7 +632,7 @@ export function initializeDefaultHobbyNotebook(
 export function getDefaultFirstVideoTaskId(
     userId: string | null
 ): string {
-    return `default-focus-first-video-${getUserKey(userId)}`;
+    return `default-focus-first-video-${getIdKey(userId)}`;
 }
 
 export function initializeDefaultFocus(
@@ -622,14 +657,10 @@ export function initializeDefaultFocus(
     );
 }
 
-// ★★★★★ CHANGED 11/09/2026 ★★★★★ — The page layout changed (the
-// "Consider:" questions are now a list block), 
-// An earlier copy that was deleted can't interfere with this one, because
-// a deleted ID is never brought back by a sync.
 function createFirstVideoExperience(
     userId: string | null
 ): NotebookExperience {
-    const user = getUserKey(userId);
+    const user = getIdKey(userId);
     const pageId = `default-focus-first-video-page-${user}`;
 
     return {
@@ -749,19 +780,25 @@ export function initializeDefaultAssignmentNotebook(
 }
 
 // ======================================================
-// ★★★★★ CHANGED 11/09/2026 ★★★★★ — NEW.
 // Default 3 — Journey: Learn Content Creation
 // ------------------------------------------------------
 // A Journey owns exactly one notebook (see createJourney). The plan holds
 // the purpose and the sessions per week. The two-session structure and
 // the long-term progression live on a Roadmap page in the Journey's
 // notebook, because the plan has no place for them.
+//
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — The Journey and its notebook both
+// come from one createJourney call, so they have the same shape as ones
+// the user creates. Only the IDs (and the notebook's title and page
+// list) are swapped for the fixed ones. Journey.notebookId is the link.
+// The Journey is also placed in a Journey folder (Journey.folderId).
 // ======================================================
 
 function getContentJourneyIds(userId: string | null) {
-    const user = getUserKey(userId);
+    const user = getIdKey(userId);
 
     return {
+        folderId: `default-focus-journey-folder-${user}`,
         journeyId: `default-focus-content-journey-${user}`,
         notebookId: `default-focus-content-journey-notebook-${user}`,
         pageId: `default-focus-content-journey-roadmap-${user}`,
@@ -769,13 +806,15 @@ function getContentJourneyIds(userId: string | null) {
 }
 
 function createContentJourneyExperience(
-    userId: string | null
+    userId: string | null,
+    notebook?: Notebook
 ): NotebookExperience {
     const ids = getContentJourneyIds(userId);
 
     return {
         notebookId: ids.notebookId,
         notebookTitle: "Learn Content Creation",
+        notebook,
         pageId: ids.pageId,
         pageTitle: "Journey Roadmap",
         blocks: buildBlocks(ids.pageId, [
@@ -862,21 +901,49 @@ function createContentJourneyExperience(
     };
 }
 
-// The Journey object comes from createJourney so it has the same shape as
-// one the user creates. The notebook that createJourney makes is not used;
-// the default notebook is built by saveNotebookExperience instead.
-function createDefaultJourneyObject(
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — NEW: there is no Journey folder
+// factory, so it is built here, the same way as the notebook folder.
+function createDefaultJourneyFolder(
+    id: string,
+    title: string,
     userId: string | null
-): Journey {
-    const ids = getContentJourneyIds(userId);
-    const { journey } = createJourney(userId);
-
+): JourneyFolder {
     return {
-        ...journey,
-        journeyId: ids.journeyId,
-        notebookId: ids.notebookId,
+        id,
+        title,
+        userId,
+        createdAt: new Date().toISOString(),
         updatedAt: DEFAULT_UPDATED_AT,
     };
+}
+
+// ★★★★★ CHANGED 11/10/2026 ★★★★★ — NEW: builds the Journey and its
+// notebook together from ONE createJourney call, then swaps in the fixed
+// IDs. The Journey's notebookId matches the notebook's id, and the
+// Journey points at its folder.
+function createDefaultJourneyAndNotebook(
+    userId: string | null
+): { journey: Journey; notebook: Notebook } {
+    const ids = getContentJourneyIds(userId);
+    const made = createJourney(userId);
+
+    const journey: Journey = {
+        ...made.journey,
+        journeyId: ids.journeyId,
+        notebookId: ids.notebookId,
+        folderId: ids.folderId,
+        updatedAt: DEFAULT_UPDATED_AT,
+    };
+
+    const notebook: Notebook = {
+        ...made.notebook,
+        id: ids.notebookId,
+        title: "Learn Content Creation",
+        pageIds: [ids.pageId],
+        updatedAt: DEFAULT_UPDATED_AT,
+    };
+
+    return { journey, notebook };
 }
 
 function createDefaultJourneyPlan(
@@ -890,17 +957,24 @@ function createDefaultJourneyPlan(
     };
 }
 
-// True only when the notebook experience, the Journey and its plan are
-// all really in storage.
+// True only when the Journey folder, the notebook experience, the Journey
+// and its plan are all really in storage, and the Journey points at both
+// its folder and its notebook.
 function isContentJourneyInStorage(
     userId: string | null
 ): boolean {
     const ids = getContentJourneyIds(userId);
 
     return (
+        loadJourneyFolders().some(
+            folder => folder.id === ids.folderId
+        ) &&
         isExperienceInStorage(createContentJourneyExperience(userId)) &&
         loadJourneys().some(
-            journey => journey.journeyId === ids.journeyId
+            journey =>
+                journey.journeyId === ids.journeyId &&
+                journey.notebookId === ids.notebookId &&
+                journey.folderId === ids.folderId
         ) &&
         getPlanByJourneyId(ids.journeyId) !== null
     );
@@ -921,16 +995,33 @@ export function initializeDefaultContentJourney(
     try {
         const ids = getContentJourneyIds(userId);
 
+        const { journey, notebook } =
+            createDefaultJourneyAndNotebook(userId);
+
+        // The folder first, so the Journey never points at a folder that
+        // is not there.
+        saveMissing(
+            loadJourneyFolders,
+            saveJourneyFolders,
+            [
+                createDefaultJourneyFolder(
+                    ids.folderId,
+                    "Completing an Assignment",
+                    userId
+                ),
+            ]
+        );
+
         saveNotebookExperience(
             userId,
-            createContentJourneyExperience(userId)
+            createContentJourneyExperience(userId, notebook)
         );
 
         saveMissingBy(
             loadJourneys,
             saveJourneys,
-            [createDefaultJourneyObject(userId)],
-            journey => journey.journeyId
+            [journey],
+            item => item.journeyId
         );
 
         // setPlan replaces an existing plan, so only create one if there
@@ -963,7 +1054,5 @@ export function initializeDefaults(
     initializeDefaultHobbyNotebook(userId);
     initializeDefaultFocus(userId);
     initializeDefaultAssignmentNotebook(userId);
-
-    // ★★★★★ CHANGED 11/09/2026 ★★★★★ — NEW: Journey default.
     initializeDefaultContentJourney(userId);
 }
