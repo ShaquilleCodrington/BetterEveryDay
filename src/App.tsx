@@ -3,6 +3,11 @@
 // ------------------------------------------------------
 // Application root and authentication gate.
 //
+// 2026-11-14 — Top-level routing:
+//      "/"            -> website LandingPage (public, no auth)
+//      everything else -> AuthGate -> MainApplication
+//      (Congruence now lives only at /congruence.)
+//
 // Authentication has two responsibilities here:
 //
 // 1. AuthGate
@@ -57,6 +62,11 @@ import InvoicePage from "./pages/InvoicePage.tsx";
 import CalendarPage from "./pages/CalendarPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import DeletedPage from "./pages/DeletedPage";
+// 2026-11-14 — The landing page is JavaScript maintained in the website submodule.
+// @ts-expect-error The submodule does not provide a TypeScript declaration for this JSX module.
+import LandingPage from "../website/src/pages/LandingPage.jsx";
+import "../website/src/styles/index.css";
+import "../website/src/styles/app.css";
 import { createCalendarEventsFromTasks } from "./Features/Calendar/calendar";
 import type { CalendarEvent } from "./Features/Calendar/calendar";
 import {
@@ -169,14 +179,14 @@ function MainApplication(
           />
         }
       >
-         <Route path="/" element={<CongruencePage />}>
-           
-
-          <Route
-            path="journeyPreview"
-            element={<JourneyPreview />}
-          />
-        </Route>
+        {/* 2026-11-14 — "/" is the website LandingPage, handled in App()
+            before AuthGate, so it no longer has a route here. The
+            journey preview now has its own route instead of being
+            nested under "/". */}
+        <Route
+          path="/journeyPreview"
+          element={<JourneyPreview />}
+        />
 
         <Route path="/task" element={<TaskListPage />} />
         <Route path="/focus" element={<FocusPage />} />
@@ -389,6 +399,14 @@ function CalendarRoute() {
 }
 
 function App() {
+  const location = useLocation();
+
+  // 2026-11-14 — Show the website at the domain root.
+  // App pages, including /congruence, continue through the existing auth gate.
+  if (location.pathname === "/") {
+    return <LandingPage />;
+  }
+
   return <AuthGate />;
 }
 
