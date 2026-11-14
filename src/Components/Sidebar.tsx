@@ -32,13 +32,13 @@ export default function Sidebar({ state, onToggle }: SidebarProps) {
             <PanelLeft size={18} />
           </button>
         </Tooltip>
-        <Link to="/" className="sidebar-logo-link">
+        <Link to="/congruence" className="sidebar-logo-link">
           {!collapsed && <div className="sidebar-logo">BetterEveryDay</div>}
         </Link>
       </div>
       
       <nav className="sidebar-nav">
-        <Link to="/">
+        <Link to="/congruence">
           <button className="sidebar-btn">
             
             <Signpost size={18} className="sidebar-btn-icon" />
