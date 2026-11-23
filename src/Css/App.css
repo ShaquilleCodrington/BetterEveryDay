@@ -2397,3 +2397,288 @@
         padding: var(--space-md) var(--space-sm);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2026-11-22: RESEARCH
+   Embedded web workspace. ResearchWorkspace wraps .main-content inside
+   .app-shell, to the right of the sidebar. Panes share space by flex-grow
+   ratio (the split percentage), never by pixels. Everything uses tokens
+   from index.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Split workspace ────────────────────────────────────────────────────── */
+.research-workspace {
+  --research-transition-ms: 200ms;       /* overridden inline from RESEARCH_TRANSITION_MS */
+  container: research-workspace / inline-size;
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.research-main,
+.research-pane-wrap {
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  min-height: 0;
+  transition: flex-grow var(--research-transition-ms) ease;   /* same 0.2s ease as the sidebar */
+}
+
+.research-main {
+  display: flex;                         /* lets .main-content fill it, as it filled .app-shell */
+}
+
+.research-pane-wrap {
+  overflow: hidden;
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(var(--blur-panel));
+  -webkit-backdrop-filter: blur(var(--blur-panel));
+}
+
+/* Dragging is direct: no easing, no text selection, and the iframe can't steal the pointer. */
+.research-workspace--dragging {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.research-workspace--dragging .research-main,
+.research-workspace--dragging .research-pane-wrap {
+  transition: none;
+}
+
+.research-workspace--dragging .research-frame {
+  pointer-events: none;
+}
+
+/* ── Divider: 1px line, wider invisible hit area ────────────────────────── */
+.research-divider {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 1px;
+  background: var(--border-panel);
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+  transition: background 0.15s ease;
+}
+
+.research-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  right: -5px;
+}
+
+.research-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -1px;
+  width: 3px;
+  height: 32px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--border-btn-hover);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.research-divider:hover,
+.research-divider:focus-visible,
+.research-workspace--dragging .research-divider {
+  background: var(--border-btn-hover);
+}
+
+.research-divider:hover::after,
+.research-divider:focus-visible::after,
+.research-workspace--dragging .research-divider::after {
+  opacity: 1;
+}
+
+/* ── Pane: navigation bar + iframe ──────────────────────────────────────── */
+.research-pane {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.research-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  padding: var(--toolbar-padding);
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-toolbar);
+}
+
+.research-toolbar__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.research-toolbar__input[aria-invalid='true'],
+.research-landing__search[data-invalid='true'] {
+  border-color: rgba(255, 150, 160, 0.75);
+}
+
+.research-toolbar .toolbar-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.research-toolbar__error {
+  flex-shrink: 0;
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-sm);
+  color: rgba(255, 170, 180, 0.98);
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-toolbar);
+}
+
+.research-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;                      /* pages that set no background stay readable */
+}
+
+/* Narrow workspace: side by side isn't usable, so Research covers the page.
+   The page underneath stays mounted; closing Research returns to it. */
+@container research-workspace (max-width: 640px) {
+  .research-pane-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    background: var(--bg-sidebar);
+    transition: opacity var(--research-transition-ms) ease;
+  }
+
+  .research-workspace--expanded .research-pane-wrap {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .research-divider {
+    display: none;
+  }
+}
+
+/* ── Landing page (/study/research, loaded inside the iframe) ───────────── */
+/* Rendered outside the app shell, over the same starfield as every page. */
+.research-landing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+  padding: var(--page-padding);
+  overflow-y: auto;
+}
+
+.research-landing__inner {
+  width: 100%;
+  max-width: 560px;
+  margin: auto;
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+}
+
+.research-landing__title {
+  margin-bottom: var(--space-xs);
+  font-size: clamp(var(--font-size-h1), 6vw, 34px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-logo);
+  text-shadow: 0 0 20px rgba(160, 190, 255, 0.4);   /* same glow as .sidebar-logo */
+}
+
+.research-landing__tagline {
+  margin-bottom: var(--space-xl);
+  font-size: var(--font-size-base);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.research-landing__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 999px;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+
+.research-landing__search:focus-within {
+  background: var(--bg-input-focus);
+  border-color: var(--border-input-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow-input);
+}
+
+/* the wrapper shows the focus ring; the bare input inside it shouldn't repeat it */
+.research-landing__input,
+.research-landing__input:focus {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.research-landing__submit {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.research-landing__error {
+  margin-top: var(--space-sm);
+  color: rgba(255, 170, 180, 0.98);
+}
+
+.research-landing__presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-xl);
+}
+
+.research-landing__preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-panel);
+}
+
+.research-landing__preset svg {
+  width: 24px;
+  height: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .research-main,
+  .research-pane-wrap {
+    transition: none;
+  }
+}

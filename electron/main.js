@@ -257,7 +257,14 @@ function setupAutoUpdater()
             catch (error)
             {
                 // No profile saved yet (first run) — not a real error.
-                if (error.code !== "ENOENT")
+                // An empty or unreadable profile.json (SyntaxError) also means
+                // there is no usable profile, so it returns null with a short
+                // warning instead of a full error and stack trace.
+                if (error instanceof SyntaxError)
+                {
+                    console.warn("[main] profile.json is empty or invalid; treating it as no saved profile.");
+                }
+                else if (error.code !== "ENOENT")
                 {
                     console.error("[main] failed to read profile.json:", error);
                 }

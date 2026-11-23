@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import Tooltip from "./Tooltip"; 
 // CHANGED: import the Lucide icons used in the nav
 import { Signpost, ListTodo, Sticker, NotebookTabs, Road, 
-  PanelLeft,FileText, CalendarDays, MessageSquare } from "lucide-react";
+  PanelLeft,FileText, CalendarDays, MessageSquare, PanelsTopLeft, } from "lucide-react";
+import { toggleResearch } from "../Features/research/researchStorage";
 // CHANGED: added props so the parent (MainLayout) can control collapsed state
 
 type SidebarState = "closed" | "collapsed" | "open";
@@ -22,6 +23,7 @@ export default function Sidebar({ state, onToggle }: SidebarProps) {
  // Existing icons-only behavior
  const collapsed = state === "collapsed";
 
+ 
  return (
    <div className={`sidebar${collapsed ? " sidebar--collapsed" : ""}`}>
      <div className="sidebar-logo-row">
@@ -81,6 +83,7 @@ export default function Sidebar({ state, onToggle }: SidebarProps) {
             {!collapsed && <span className="sidebar-btn-label">Journey</span>}
           </button>
         </Link>
+    
 
         <Link to="/invoice">
           <button className="sidebar-btn">
@@ -90,6 +93,13 @@ export default function Sidebar({ state, onToggle }: SidebarProps) {
             )}
           </button>
         </Link>
+
+        <button type="button" className="sidebar-btn" onClick={toggleResearch}>
+          <PanelsTopLeft size={18} className="sidebar-btn-icon" />
+          {!collapsed && (
+            <span className="sidebar-btn-label">Research</span>
+          )}
+        </button>
         
       </nav>
 

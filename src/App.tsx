@@ -38,9 +38,20 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
-import { continueAsGuest, logout, useAuthConnector } from "./Services/firebase/connector";
+import {
+  continueAsGuest,
+  logout,
+  useAuthConnector,
+} from "./Services/firebase/connector";
 import { autoSync } from "./Services/Snapshot/syncManager";
-import { Routes, Route, Outlet, useLocation, useOutletContext } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Outlet,
+  useLocation,
+  useOutletContext,
+} from "react-router-dom";
+
 import FocusPage from "./pages/FocusPage";
 import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
@@ -62,11 +73,17 @@ import InvoicePage from "./pages/InvoicePage.tsx";
 import CalendarPage from "./pages/CalendarPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import DeletedPage from "./pages/DeletedPage";
+
+// Research
+import ResearchPage from "./pages/ResearchPage";
+import { ResearchWorkspace } from "./Features/research/ResearchWorkspace.tsx";
+
 // 2026-11-14 — The landing page is JavaScript maintained in the website submodule.
 // @ts-expect-error The submodule does not provide a TypeScript declaration for this JSX module.
 import LandingPage from "../website/src/pages/LandingPage.jsx";
 import "../website/src/styles/index.css";
 import "../website/src/styles/app.css";
+
 import { createCalendarEventsFromTasks } from "./Features/Calendar/calendar";
 import type { CalendarEvent } from "./Features/Calendar/calendar";
 import {
@@ -75,13 +92,36 @@ import {
 } from "./Features/Calendar/calendarStorage";
 import { loadTasks, saveTasks } from "./Data/taskStorage";
 import type { ChecklistItem } from "./Components/Checklist";
+
 // 2026-10-18 — Task lifecycle helpers and shared context type
 import type { Task, TaskOutletContext } from "./Data/tasks";
-import { applyChecklistChange, refreshTaskLifecycle } from "./Data/tasks";
+import {
+  applyChecklistChange,
+  refreshTaskLifecycle,
+} from "./Data/tasks";
+
 import "./Css/App.css";
 import { initializeDefaults } from "./Data/defaultContent.ts";
 
-type AuthStatus = | "loading" |"login" ;
+type AuthStatus = "loading" | "login";
+
+function App() {
+  const location = useLocation();
+
+  // Show the website at the domain root.
+  // App pages continue through the existing auth gate.
+  if (location.pathname === "/") {
+    return <LandingPage />;
+  }
+
+  // The Research landing page loads inside the Research iframe, so it
+  // renders outside AuthGate: no sidebar and no login.
+  if (location.pathname === "/study/research") {
+    return <ResearchPage />;
+  }
+
+  return <AuthGate />;
+}
 
 function AuthGate() {
   const [authStatus, setAuthStatus] =
@@ -89,18 +129,17 @@ function AuthGate() {
 
   const currentUser: User | null = useAuthConnector();
 
-
   const [guestMode, setGuestMode] = useState(false);
-   
+
   // 2026-08-22: Central application logout action.
-// This delegates authentication to the connector.
-async function handleLogout(): Promise<void> {
+  // This delegates authentication to the connector.
+  async function handleLogout(): Promise<void> {
     await logout();
-}
-  
+  }
+
   // AuthGate is now the single Firebase
   // authentication listener.
-    useEffect(() => {
+  useEffect(() => {
     if (currentUser) {
       setGuestMode(false);
       setAuthStatus("login");
@@ -120,69 +159,60 @@ async function handleLogout(): Promise<void> {
 
   // Firebase says there is no authenticated user.
   // The user can either authenticate or explicitly continue as a guest.
-   if  (!currentUser && !guestMode) {
+  if (!currentUser && !guestMode) {
     return (
       <LoginScreen
         onGuest={async () => {
-
           // ======================================================
           // 2026-08-22: Guest entry leaves currentUser as null
           // while allowing the user to enter the main application.
           // ======================================================
           await continueAsGuest();
-
           setGuestMode(true);
-        
         }}
       />
     );
   }
 
-   // Either Firebase authenticated the user or the user
+  // Either Firebase authenticated the user or the user
   // explicitly chose to continue as a guest.
   return (
-
-  <MainApplication
-    
-            currentUser={currentUser}
-            onLogin={() => {
-                setGuestMode(false);
-                setAuthStatus("login");
-            }}
-            onLogout={handleLogout}
-          />
-      );
-    }
-        
+    <MainApplication
+      currentUser={currentUser}
+      onLogin={() => {
+        setGuestMode(false);
+        setAuthStatus("login");
+      }}
+      onLogout={handleLogout}
+    />
+  );
+}
 
 // This contains the existing BetterEveryDay routes.
 //
 // The routes were moved out of App() so that AuthGate can
 // control whether these routes are rendered.
-function MainApplication(
-  { 
-    currentUser, onLogin, onLogout 
-  }:  { 
-        currentUser: User | null; 
-        onLogin: () => void;
-        onLogout: () => Promise<void>;
-      
-      }) {
-        
+function MainApplication({
+  currentUser,
+  onLogin,
+  onLogout,
+}: {
+  currentUser: User | null;
+  onLogin: () => void;
+  onLogout: () => Promise<void>;
+}) {
   return (
     <Routes>
-       <Route element={
+      <Route
+        element={
           <MainLayout
             currentUser={currentUser}
-           onLogin={onLogin}
+            onLogin={onLogin}
             onLogout={onLogout}
           />
         }
       >
-        {/* 2026-11-14 — "/" is the website LandingPage, handled in App()
-            before AuthGate, so it no longer has a route here. The
-            journey preview now has its own route instead of being
-            nested under "/". */}
+        {/* The journey preview has its own route. */}
         <Route
           path="/journeyPreview"
           element={<JourneyPreview />}
@@ -195,30 +225,42 @@ function MainApplication(
         <Route path="/congruence" element={<CongruencePage />} />
         <Route path="/invoice" element={<InvoicePage />} />
         <Route path="/calendar" element={<CalendarRoute />} />
-        <Route  path="/feedback" element={ currentUser ? (
-            <FeedbackPage userId={currentUser.uid} />
-          ) : (
-            <div>Sign in to access Community Feedback.</div>
-         )}/>
-        <Route  path="/settings/deleted" element={<DeletedPage />} />
+
+        <Route
+          path="/feedback"
+          element={
+            currentUser ? (
+              <FeedbackPage userId={currentUser.uid} />
+            ) : (
+              <div>Sign in to access Community Feedback.</div>
+            )
+          }
+        />
+
+        <Route path="/settings/deleted" element={<DeletedPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+
         <Route
           path="/settings/appearance"
           element={<AppearancePage />}
         />
+
         <Route
           path="/settings/notifications"
           element={<NotificationsPage />}
         />
+
         <Route
           path="/settings/general"
           element={<GeneralSettingsPage />}
         />
+
         <Route path="/notebook" element={<NotesPage />} />
         <Route path="/journey" element={<JourneyPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/help" element={<HelpPage />} />
-      </Route>
+
+       </Route>
 
       {/* Timer is intentionally outside MainLayout */}
       <Route path="/timer" element={<TimerPage />} />
@@ -229,19 +271,21 @@ function MainApplication(
 // This only renders after AuthGate allows the user into
 // MainApplication.
 function MainLayout({
-  currentUser, onLogin, onLogout
+  currentUser,
+  onLogin,
+  onLogout,
 }: {
   currentUser: User | null;
   onLogin: () => void;
   onLogout: () => Promise<void>;
 }) {
-type SidebarState = "closed" | "collapsed" | "open";
+  type SidebarState = "closed" | "collapsed" | "open";
 
-   const [sidebarState, setSidebarState] =
-     useState<SidebarState>("open");
-      // 10/09/2026 — Sync when the user leaves a page. The cleanup runs when
-  // the path changes (leaving the old page) and when MainLayout unmounts
-  // (for example, going to the Timer page, which sits outside MainLayout).
+  const [sidebarState, setSidebarState] =
+    useState<SidebarState>("open");
+
+  // Sync when the user leaves a page. Cleanup runs when the
+  // path changes and when MainLayout unmounts.
   const location = useLocation();
 
   useEffect(() => {
@@ -256,14 +300,10 @@ type SidebarState = "closed" | "collapsed" | "open";
     };
   }, [location.pathname, currentUser?.uid]);
 
-  // 2026-10-18 — Single source of truth for tasks. Every page reads and
-  // changes tasks through this state; nothing else keeps its own copy.
-  // ★★★★★ CHANGED 11/09/2026 ★★★★★ — Default starter content runs BEFORE
-  // the tasks are read, so the state below already includes it. Each
-  // default is created once per user and then left alone.
+  // Single source of truth for tasks.
+  // Default starter content runs before tasks are read.
   const [tasks, setTasks] = useState<Task[]>(() => {
     initializeDefaults(currentUser?.uid ?? null);
-
     return refreshTaskLifecycle(loadTasks());
   });
 
@@ -285,81 +325,99 @@ type SidebarState = "closed" | "collapsed" | "open";
 
   function handleDeleteTask(taskId: string) {
     setTasks((prevTasks) =>
-      prevTasks.filter((task) => task.id !== taskId)
-    );
-  }
-
-  function handleChecklistChange(taskId: string, items: ChecklistItem[]) {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? applyChecklistChange(task, items) : task
+      prevTasks.filter((task) => task.id !== taskId
       )
     );
   }
 
-function handleSidebarToggle() {
-    setSidebarState((currentState) => {
-        if (currentState === "closed")
-         { return "collapsed"; }
-        if (currentState === "collapsed")
-            { return "open"; }
+  function handleChecklistChange(
+    taskId: string,
+    items: ChecklistItem[],
+  ) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId
+          ? applyChecklistChange(task, items)
+          : task
+      )
+    );
+  }
 
-            return "closed"; }
-            );}
-  return(
-    <div className="app-shell"
-     style={{
+  function handleSidebarToggle() {
+    setSidebarState((currentState) => {
+      if (currentState === "closed") return "collapsed";
+      if (currentState === "collapsed") return "open";
+      return "closed";
+    });
+  }
+
+  return (
+    <div
+      className="app-shell"
+      style={{
         display: "flex",
         width: "100%",
         minWidth: 0,
-    }}
+      }}
     >
-       <div
+      {/* Sidebar remains outside the Research split. */}
+      <div
         style={{
-            flex: `0 0 ${sidebarState === "closed" ? "0%"
-                : sidebarState === "collapsed" ? "7%" : "13%"}`,
-            minWidth: 0,
-        }}>
-
-        
-    <Sidebar
-        state={sidebarState}
-        onToggle={handleSidebarToggle} />
+          flex: `0 0 ${
+            sidebarState === "closed"
+              ? "0%"
+              : sidebarState === "collapsed"
+                ? "7%"
+                : "13%"
+          }`,
+          minWidth: 0,
+        }}
+      >
+        <Sidebar
+          state={sidebarState}
+          onToggle={handleSidebarToggle}
+        />
       </div>
 
-      <div className="main-content"
-             style={{
+      {/* Research splits the main application surface, not the sidebar. */}
+      <ResearchWorkspace>
+        <div
+          className="main-content"
+          style={{
             flex: "1 1 auto",
             minWidth: 0,
-        }}>
-        <Toolbar currentUser={currentUser} 
+            height: "100%",
+          }}
+        >
+          <Toolbar
+            currentUser={currentUser}
             onLogin={onLogin}
             onLogout={onLogout}
             onToggleSidebar={handleSidebarToggle}
-             />
-
-        <div className="page-container">
-          <Outlet
-            context={{
-              currentUser,
-              onLogin,
-              onLogout,
-              // 2026-10-18 — shared task state and handlers
-              tasks,
-              onCreateTask: handleCreateTask,
-              onEditTask: handleEditTask,
-              onDeleteTask: handleDeleteTask,
-              onChecklistChange: handleChecklistChange,
-            }}
           />
+
+          <div className="page-container">
+            <Outlet
+              context={{
+                currentUser,
+                onLogin,
+                onLogout,
+                tasks,
+                onCreateTask: handleCreateTask,
+                onEditTask: handleEditTask,
+                onDeleteTask: handleDeleteTask,
+                onChecklistChange: handleChecklistChange,
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </ResearchWorkspace>
     </div>
   );
 }
 
 function CalendarRoute() {
-  // 2026-10-18 — Tasks come from MainLayout; the calendar keeps no task state
+  // Tasks come from MainLayout; the calendar keeps no task state.
   const {
     tasks,
     onCreateTask,
@@ -368,20 +426,17 @@ function CalendarRoute() {
     onChecklistChange,
   } = useOutletContext<TaskOutletContext>();
 
-  // Calendar events load from their own storage key.
   const [calendarEvents, setCalendarEvents] =
     useState<CalendarEvent[]>(loadCalendarEvents);
 
   // Tasks with a valid due date and no event get one.
-  // createCalendarEventsFromTasks returns the same array when nothing
-  // is new, so this does not re-render in a loop.
   useEffect(() => {
     setCalendarEvents((currentEvents) =>
       createCalendarEventsFromTasks(tasks, currentEvents)
     );
   }, [tasks]);
 
-  // Persist whenever the calendar events change.
+  // Persist whenever calendar events change.
   useEffect(() => {
     saveCalendarEvents(calendarEvents);
   }, [calendarEvents]);
@@ -398,16 +453,5 @@ function CalendarRoute() {
   );
 }
 
-function App() {
-  const location = useLocation();
-
-  // 2026-11-14 — Show the website at the domain root.
-  // App pages, including /congruence, continue through the existing auth gate.
-  if (location.pathname === "/") {
-    return <LandingPage />;
-  }
-
-  return <AuthGate />;
-}
 
 export default App;
