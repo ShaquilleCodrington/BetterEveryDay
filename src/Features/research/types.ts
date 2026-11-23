@@ -26,16 +26,15 @@ export const RESEARCH_STORAGE_KEY = "bettereveryday.research";
  * on (dev server or production). When the app isn't running over http(s)
  * (for example a file:// Electron build) it falls back to the production URL.
  */
-export const RESEARCH_LANDING_URL =
-  typeof window !== "undefined" && /^https?:$/.test(window.location.protocol)
-    ? `${window.location.origin}/study/research`
-    : "https://bettereveryday.study/study/research";
+/** Initial page displayed when Research opens. */
+export const RESEARCH_LANDING_URL = "https://en.wikipedia.org/wiki/Main_Page";
 
 /** The public BetterEveryDay site (used by the BetterEveryDay preset). */
 export const RESEARCH_HOME_URL = "https://bettereveryday.study";
 
-/** Search text is routed here; Google handles the results page. */
-export const RESEARCH_SEARCH_URL = "https://www.google.com/search?q=";
+/** Search text is routed to Wikipedia. */
+export const RESEARCH_SEARCH_URL =
+  "https://en.wikipedia.org/w/index.php?search=";
 
 /** Initial split: main BetterEveryDay pane percentage (Research gets the rest). */
 export const DEFAULT_SPLIT_PERCENT = 50;
