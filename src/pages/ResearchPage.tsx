@@ -1,156 +1,294 @@
 // ======================================================
-// ResearchPage.tsx
+// pages/ResearchPage.tsx
 // ------------------------------------------------------
-// The Research landing page at /study/research.
+// The Research page: what fills the Research side of the
+// workspace.
 //
-// This is the page loaded INSIDE the Research iframe. It is
-// not the split container and not the Research object. It
-// is rendered by App() before AuthGate, so it has no
-// sidebar and no login.
+// Two views (state lives in researchStorage):
+//   home: our search bar + shortcuts above the home page
+//   page: the compact toolbar above the current page
 //
-// It asks the Research object (the parent window) to
-// navigate; the object owns the iframe and the destination.
+// The page owns the single iframe. It gets everything it
+// needs from researchStorage; it is rendered by App.tsx
+// into ResearchWorkspace's `pane`, so it only exists while
+// Research is open.
 // ======================================================
 
-import { useState } from "react";
-import type { FormEvent, ReactNode } from "react";
-import { RESEARCH_NAVIGATE_MESSAGE, RESEARCH_PRESETS } from "../Features/research/types";
-import type { ResearchNavigateMessage, ResearchPresetId } from "../Features/research/types";
-import { resolveResearchInput } from "../Features/research/researchStorage";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import {
+  ArrowLeftRight,
+  ArrowRight,
+  BookOpen,
+  Calculator,
+  Code,
+  GraduationCap,
+  Globe,
+  Home,
+  Sigma,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  RESEARCH_IFRAME_ALLOW,
+  RESEARCH_IFRAME_SANDBOX,
+  RESEARCH_SEARCH_PROVIDER,
+  RESEARCH_SHORTCUTS,
+} from "../Features/research/types";
+import type { ResearchShortcut, ResearchShortcutId } from "../Features/research/types";
+import {
+  closeResearch,
+  cycleResearchFocus,
+  describeResolveError,
+  goHomeResearch,
+  navigateResearch,
+  useResearch,
+  useResearchMobile,
+} from "../Features/research/researchStorage";
 
-function Icon({ children }: { children: ReactNode }) {
+const SEARCH_PLACEHOLDER = `Search ${RESEARCH_SEARCH_PROVIDER.label} or enter a URL`;
+
+/* ------------------------------------------------------------------ */
+/* Icons                                                               */
+/* ------------------------------------------------------------------ */
+
+function ExternalIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {children}
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 4h6v6" />
+      <path d="M20 4l-9 9" />
+      <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
     </svg>
   );
 }
 
-// Neutral glyphs (not brand logos); swap for the app's icon system if one is added.
-const PRESET_ICONS: Record<ResearchPresetId, ReactNode> = {
-  bettereveryday: (
-    <Icon>
-      <path d="M4 17l5-5 4 4 7-8" />
-      <path d="M15 8h5v5" />
-    </Icon>
-  ),
-  google: (
-    <Icon>
-      <circle cx="11" cy="11" r="6" />
-      <path d="M20 20l-4.5-4.5" />
-    </Icon>
-  ),
-  youtube: (
-    <Icon>
-      <rect x="3" y="6" width="18" height="12" rx="3.5" />
-      <path d="M10.5 9.5v5l4.5-2.5z" />
-    </Icon>
-  ),
-  github: (
-    <Icon>
-      <circle cx="6" cy="6" r="2" />
-      <circle cx="6" cy="18" r="2" />
-      <circle cx="18" cy="8" r="2" />
-      <path d="M6 8v8" />
-      <path d="M18 10c0 3-3 4-7 4s-5 1-5 2" />
-    </Icon>
-  ),
-  wikipedia: (
-    <Icon>
-      <path d="M5 4h13a1 1 0 0 1 1 1v14H6a1 1 0 0 0-1 1z" />
-      <path d="M5 20V4" />
-    </Icon>
-  ),
-};
-
-/**
- * Asks the Research object (the parent window) to navigate the iframe.
- * If this page was opened on its own (not embedded), it just navigates itself.
- * targetOrigin is "*" because the parent's origin isn't known here; the message
- * only carries a URL the user chose, and the parent verifies the sender.
- */
-function sendToResearch(url: string): void {
-  if (window.parent !== window) {
-    const message: ResearchNavigateMessage = { type: RESEARCH_NAVIGATE_MESSAGE, url };
-    window.parent.postMessage(message, "*");
-  } else {
-    window.location.assign(url);
-  }
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12" />
+      <path d="M18 6L6 18" />
+    </svg>
+  );
 }
 
-export default function ResearchPage() {
+// lucide-react is already used by the sidebar. No brand logos: GitHub uses a code icon.
+const SHORTCUT_ICONS: Record<ResearchShortcutId, LucideIcon> = {
+  web: Globe,
+  wiki: BookOpen,
+  github: Code,
+  desmos: Calculator,
+  wolfram: Sigma,
+  khan: GraduationCap,
+};
+
+/* ------------------------------------------------------------------ */
+/* Switch button (mobile only): moves the screen to the app side       */
+/* ------------------------------------------------------------------ */
+
+function SwitchButton() {
+  return (
+    <button
+      type="button"
+      className="toolbar-icon-btn research-cycle-btn"
+      onClick={cycleResearchFocus}
+      title="Switch to BetterEveryDay"
+      aria-label="Switch to BetterEveryDay"
+    >
+      <ArrowLeftRight size={16} aria-hidden="true" />
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Home view: search bar + shortcuts                                   */
+/* ------------------------------------------------------------------ */
+
+function ResearchHome({ isMobile }: { isMobile: boolean }) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const result = resolveResearchInput(query);
-    if (!result.ok) {
-      setError(
-        result.reason === "empty"
-          ? null
-          : result.reason === "unsupported-scheme"
-            ? "Only http and https addresses are supported."
-            : "That address is not valid.",
-      );
-      return;
-    }
-    setError(null);
-    sendToResearch(result.url);
+    const result = navigateResearch(query);
+    setError(!result.ok && result.reason !== "empty" ? describeResolveError(result.reason) : null);
+  }
+
+  function openShortcut(shortcut: ResearchShortcut) {
+    if (shortcut.embeddable) navigateResearch(shortcut.url);
+    else window.open(shortcut.url, "_blank", "noopener,noreferrer");
   }
 
   return (
-    <main className="research-landing">
-      <div className="research-landing__inner">
-        <h1 className="research-landing__title">BetterEveryDay</h1>
-        <p className="research-landing__tagline">Explore. Learn. Make progress.</p>
-
-        <form role="search" onSubmit={handleSubmit}>
-          <div className="research-landing__search" data-invalid={error ? "true" : undefined}>
-            <input
-              className="research-landing__input"
-              type="text"
-              inputMode="url"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setError(null);
-              }}
-              placeholder="Search or enter a URL"
-              aria-label="Search or enter a URL"
-              aria-invalid={error ? true : undefined}
-              spellCheck={false}
-              autoComplete="off"
-              autoFocus
-            />
-            <button type="submit" className="btn-primary research-landing__submit" aria-label="Go">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 12h14" />
-                <path d="M13 6l6 6-6 6" />
-              </svg>
-            </button>
-          </div>
-          {error && (
-            <p className="research-landing__error" role="alert">
-              {error}
-            </p>
-          )}
+    <div className="research-home">
+      <div className="research-home__bar">
+        {isMobile && <SwitchButton />}
+        <form className="research-home__search" role="search" onSubmit={handleSubmit} data-invalid={error ? "true" : undefined}>
+          <input
+            className="research-home__input"
+            type="text"
+            inputMode="url"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setError(null);
+            }}
+            placeholder={SEARCH_PLACEHOLDER}
+            aria-label={SEARCH_PLACEHOLDER}
+            aria-invalid={error ? true : undefined}
+            spellCheck={false}
+            autoComplete="off"
+            autoFocus
+          />
+          <button type="submit" className="btn-primary research-home__submit" aria-label="Go">
+            <ArrowRight size={18} aria-hidden="true" />
+          </button>
         </form>
-
-        <div className="research-landing__presets">
-          {RESEARCH_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="research-landing__preset"
-              onClick={() => sendToResearch(preset.url)}
-            >
-              {PRESET_ICONS[preset.id]}
-              <span>{preset.label}</span>
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          className="toolbar-icon-btn"
+          onClick={closeResearch}
+          title="Close Research"
+          aria-label="Close Research"
+        >
+          <CloseIcon />
+        </button>
       </div>
-    </main>
+      {error && (
+        <div className="research-home__error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="research-home__shortcuts">
+        {RESEARCH_SHORTCUTS.map((shortcut) => {
+          const ShortcutIcon = SHORTCUT_ICONS[shortcut.id];
+          const hint = shortcut.embeddable ? shortcut.label : `${shortcut.label} (opens in a new tab)`;
+          return (
+            <button
+              key={shortcut.id}
+              type="button"
+              className="research-home__shortcut"
+              onClick={() => openShortcut(shortcut)}
+              title={hint}
+              aria-label={hint}
+            >
+              <ShortcutIcon size={26} strokeWidth={1.8} aria-hidden="true" />
+              <span>{shortcut.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page view: compact toolbar                                          */
+/* ------------------------------------------------------------------ */
+
+function ResearchToolbar({ url, isMobile }: { url: string; isMobile: boolean }) {
+  const [draft, setDraft] = useState(url);
+  const [error, setError] = useState<string | null>(null);
+
+  // Keep the address bar in step with the destination (one source of truth: `url`).
+  useEffect(() => {
+    setDraft(url);
+    setError(null);
+  }, [url]);
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    const result = navigateResearch(draft);
+    setError(!result.ok && result.reason !== "empty" ? describeResolveError(result.reason) : null);
+  }
+
+  function openExternally() {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <>
+      <form className="research-toolbar" onSubmit={handleSubmit}>
+        {isMobile && <SwitchButton />}
+        <button
+          type="button"
+          className="toolbar-icon-btn"
+          onClick={goHomeResearch}
+          title="Research home"
+          aria-label="Research home"
+        >
+          <Home size={16} aria-hidden="true" />
+        </button>
+        <input
+          className="research-toolbar__input"
+          type="text"
+          inputMode="url"
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setError(null);
+          }}
+          placeholder={SEARCH_PLACEHOLDER}
+          aria-label={SEARCH_PLACEHOLDER}
+          aria-invalid={error ? true : undefined}
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          className="toolbar-icon-btn"
+          onClick={openExternally}
+          title="Open in a new tab (some sites block embedding)"
+          aria-label="Open in a new tab"
+        >
+          <ExternalIcon />
+        </button>
+        <button
+          type="button"
+          className="toolbar-icon-btn"
+          onClick={closeResearch}
+          title="Close Research"
+          aria-label="Close Research"
+        >
+          <CloseIcon />
+        </button>
+      </form>
+      {error && (
+        <div className="research-toolbar__error" role="alert">
+          {error}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The iframe is only re-pointed when `url` changes, so resizing the split never
+ * reloads it, and switching between the home header and the toolbar never
+ * touches it. It unmounts with this page (Research closed).
+ */
+export default function ResearchPage() {
+  const { view, url } = useResearch();
+  const isMobile = useResearchMobile();
+
+  return (
+    <div className="research-pane">
+      {view === "home" ? (
+        <ResearchHome isMobile={isMobile} />
+      ) : (
+        <ResearchToolbar url={url} isMobile={isMobile} />
+      )}
+      <iframe
+        className="research-frame"
+        title="Research"
+        src={url}
+        sandbox={RESEARCH_IFRAME_SANDBOX}
+        allow={RESEARCH_IFRAME_ALLOW}
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+      />
+    </div>
   );
 }

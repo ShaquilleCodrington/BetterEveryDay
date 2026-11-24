@@ -2682,3 +2682,138 @@
     transition: none;
   }
 }
+/* ---------- Research homepage header (inside the pane, above the iframe) ---------- */
+.research-home {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.research-home__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.research-home__search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 14px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.research-home__search:focus-within {
+  border-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+.research-home__search[data-invalid="true"] {
+  border-color: var(--danger, #d64545);
+}
+
+.research-home__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 8px 0;
+}
+
+.research-home__submit {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.research-home__error {
+  font-size: 0.85rem;
+  color: var(--danger, #d64545);
+}
+
+.research-home__shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  gap: 6px;
+}
+
+.research-home__shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.research-home__shortcut:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.research-home__shortcut:active {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  transform: scale(0.97);
+}
+
+.research-home__shortcut:focus-visible {
+  outline: 2px solid color-mix(in srgb, currentColor 55%, transparent);
+  outline-offset: 2px;
+}
+/* ---------- Research on mobile: one side at a time, both stay mounted ---------- */
+.research-workspace[data-layout="mobile"] .research-main,
+.research-workspace[data-layout="mobile"] .research-pane-wrap {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+.research-workspace[data-layout="mobile"][data-focus="research"] .research-main {
+  display: none;
+}
+
+.research-workspace[data-layout="mobile"][data-focus="app"] .research-pane-wrap {
+  display: none;
+}
+
+/* Research full-screen: hide the sidebar so it gets the whole width. */
+.app-shell:has(.research-workspace[data-layout="mobile"][data-focus="research"]) .sidebar-wrap {
+  display: none;
+}
+
+/* Floating button that brings the Research side back while the app side is in front. */
+.research-switch {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}

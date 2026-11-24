@@ -2,7 +2,8 @@
 // research/types.ts
 // ------------------------------------------------------
 // Definition of the Research object: constants, state,
-// preferences, presets, and component props.
+// preferences, search provider, shortcuts, and component
+// props.
 //
 // Research is an embedded web workspace. The Research
 // object owns one iframe, the active destination, and the
@@ -21,20 +22,10 @@ import type { ReactNode } from "react";
 export const RESEARCH_STORAGE_KEY = "bettereveryday.research";
 
 /**
- * The Research landing page, loaded in the iframe when Research opens.
- * It is served by the same app, so it uses whatever origin the app is running
- * on (dev server or production). When the app isn't running over http(s)
- * (for example a file:// Electron build) it falls back to the production URL.
+ * Page shown under the Research homepage header (search bar + shortcuts).
+ * Going "home" returns to this page with the header visible.
  */
-/** Initial page displayed when Research opens. */
-export const RESEARCH_LANDING_URL = "https://en.wikipedia.org/wiki/Main_Page";
-
-/** The public BetterEveryDay site (used by the BetterEveryDay preset). */
-export const RESEARCH_HOME_URL = "https://bettereveryday.study";
-
-/** Search text is routed to Wikipedia. */
-export const RESEARCH_SEARCH_URL =
-  "https://en.wikipedia.org/w/index.php?search=";
+export const RESEARCH_HOME_URL = "https://en.wikipedia.org/wiki/Main_Page";
 
 /** Initial split: main BetterEveryDay pane percentage (Research gets the rest). */
 export const DEFAULT_SPLIT_PERCENT = 50;
@@ -42,8 +33,8 @@ export const DEFAULT_SPLIT_PERCENT = 50;
 /** Open/close transition. Matches the sidebar's 0.2s ease. */
 export const RESEARCH_TRANSITION_MS = 200;
 
-/** postMessage type the landing page sends to the Research object. */
-export const RESEARCH_NAVIGATE_MESSAGE = "bettereveryday:research:navigate";
+/** At or below this width Research is not a split: one side fills the screen at a time. */
+export const RESEARCH_MOBILE_QUERY = "(max-width: 768px)";
 
 /**
  * Iframe sandbox. Deliberately NOT granted: allow-top-navigation (an embedded
@@ -65,15 +56,53 @@ export const RESEARCH_IFRAME_SANDBOX = [
 export const RESEARCH_IFRAME_ALLOW = "fullscreen; clipboard-write";
 
 /* ------------------------------------------------------------------ */
+/* Search provider (the ONE place the search engine is chosen)         */
+/* ------------------------------------------------------------------ */
+
+export interface ResearchSearchProvider {
+  id: string;
+  /** Shown in the search placeholder, e.g. "Search Wikipedia or enter a URL". */
+  label: string;
+  /** Builds the results URL for a query. It must be embeddable in the iframe. */
+  buildUrl: (query: string) => string;
+}
+
+/**
+ * Wikipedia is the provider for now: the big web engines (DuckDuckGo, Google,
+ * Bing) refuse to be framed by other sites. To change engines later, replace
+ * this one object; nothing else references a search URL.
+ */
+export const RESEARCH_SEARCH_PROVIDER: ResearchSearchProvider = {
+  id: "wikipedia",
+  label: "Wikipedia",
+  buildUrl: (query) => "https://en.wikipedia.org/w/index.php?search=" + encodeURIComponent(query),
+};
+
+/* ------------------------------------------------------------------ */
 /* Object definition                                                   */
 /* ------------------------------------------------------------------ */
 
 /** `popout` is reserved for a future phase and is not implemented. */
 export type ResearchMode = "closed" | "split" | "popout";
 
+/**
+ * "home": the homepage header (search bar + shortcuts) is shown above RESEARCH_HOME_URL.
+ * "page": the header is replaced by the compact toolbar and the page fills the pane.
+ */
+export type ResearchView = "home" | "page";
+
+/**
+ * Which side has the screen on mobile. "app" is the left side (BetterEveryDay),
+ * "research" is the right side. Both stay mounted; only one is visible.
+ * Ignored on desktop, where both sides are always visible.
+ */
+export type ResearchFocus = "app" | "research";
+
 /** Runtime state of the Research object. */
 export interface ResearchState {
   mode: ResearchMode;
+  view: ResearchView;
+  focus: ResearchFocus;
   /** Single source of truth for the iframe destination. */
   url: string;
   /** Percentage (0-100) of the workspace given to the main pane. Research gets the rest. */
@@ -89,28 +118,34 @@ export interface ResearchPreferences {
 }
 
 /* ------------------------------------------------------------------ */
-/* Presets                                                             */
+/* Shortcuts                                                           */
 /* ------------------------------------------------------------------ */
 
-export type ResearchPresetId =
-  | "bettereveryday"
-  | "google"
-  | "youtube"
-  | "github"
-  | "wikipedia";
+export type ResearchShortcutId = "web" | "wiki" | "github" | "desmos" | "wolfram" | "khan";
 
-export interface ResearchPreset {
-  id: ResearchPresetId;
+export interface ResearchShortcut {
+  id: ResearchShortcutId;
   label: string;
   url: string;
+  /**
+   * true  -> opens inside the Research pane.
+   * false -> opens in a new tab (the site refuses to be framed, or has not been tested).
+   * Flip a flag to true once the site is confirmed to load in the iframe.
+   */
+  embeddable: boolean;
 }
 
-export const RESEARCH_PRESETS: readonly ResearchPreset[] = [
-  { id: "bettereveryday", label: "BetterEveryDay", url: RESEARCH_HOME_URL },
-  { id: "google", label: "Google", url: "https://www.google.com" },
-  { id: "youtube", label: "YouTube", url: "https://www.youtube.com" },
-  { id: "github", label: "GitHub", url: "https://github.com" },
-  { id: "wikipedia", label: "Wikipedia", url: "https://www.wikipedia.org" },
+export const RESEARCH_SHORTCUTS: readonly ResearchShortcut[] = [
+  // DuckDuckGo sends frame-ancestors / X-Frame-Options that block other sites.
+  { id: "web", label: "Web", url: "https://duckduckgo.com", embeddable: false },
+  { id: "wiki", label: "Wiki", url: RESEARCH_HOME_URL, embeddable: true },
+  // GitHub, WolframAlpha: not yet tested in the iframe.
+  { id: "github", label: "GitHub", url: "https://github.com", embeddable: false },
+  // Desmos publishes embedding for its calculator.
+  { id: "desmos", label: "Desmos", url: "https://www.desmos.com/calculator", embeddable: true },
+  { id: "wolfram", label: "WolframAlpha", url: "https://www.wolframalpha.com", embeddable: false },
+  // Khan Academy has been reported to send X-Frame-Options: sameorigin.
+  { id: "khan", label: "Khan Academy", url: "https://www.khanacademy.org", embeddable: false },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -121,12 +156,6 @@ export type ResearchResolveResult =
   | { ok: true; kind: "url" | "search"; url: string }
   | { ok: false; reason: "empty" | "unsupported-scheme" | "invalid" };
 
-/** Message sent by the landing page (inside the iframe) to the Research object. */
-export interface ResearchNavigateMessage {
-  type: typeof RESEARCH_NAVIGATE_MESSAGE;
-  url: string;
-}
-
 /* ------------------------------------------------------------------ */
 /* Component props                                                     */
 /* ------------------------------------------------------------------ */
@@ -134,11 +163,6 @@ export interface ResearchNavigateMessage {
 export interface ResearchWorkspaceProps {
   /** The existing page area (toolbar + page). Always rendered, never remounted. */
   children: ReactNode;
-}
-
-export interface ResearchPaneProps {
-  url: string;
-  /** Resolves input (URL, domain or search text) and navigates the iframe. */
-  onNavigate: (input: string) => ResearchResolveResult;
-  onClose: () => void;
+  /** The Research page (pages/ResearchPage). Rendered only while Research is open. */
+  pane: ReactNode;
 }

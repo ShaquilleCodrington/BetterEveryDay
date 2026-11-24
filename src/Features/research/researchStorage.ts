@@ -13,8 +13,9 @@
 import { useSyncExternalStore } from "react";
 import {
   DEFAULT_SPLIT_PERCENT,
-  RESEARCH_LANDING_URL,
-  RESEARCH_SEARCH_URL,
+  RESEARCH_HOME_URL,
+  RESEARCH_MOBILE_QUERY,
+  RESEARCH_SEARCH_PROVIDER,
   RESEARCH_STORAGE_KEY,
 } from "./types";
 import type {
@@ -52,7 +53,7 @@ function toHttpUrl(candidate: string, kind: "url" | "search"): ResearchResolveRe
  *  - http(s) URL            -> that URL
  *  - domain / host:port     -> https://<input>
  *  - other schemes          -> rejected (javascript:, data:, file:, mailto:, ...)
- *  - anything else          -> Google search
+ *  - anything else          -> a search on RESEARCH_SEARCH_PROVIDER
  */
 export function resolveResearchInput(raw: string): ResearchResolveResult {
   const input = raw.trim();
@@ -71,7 +72,14 @@ export function resolveResearchInput(raw: string): ResearchResolveResult {
 
   if (!hasSpace && DOMAIN.test(input)) return toHttpUrl(`https://${input}`, "url");
 
-  return toHttpUrl(RESEARCH_SEARCH_URL + encodeURIComponent(input), "search");
+  return toHttpUrl(RESEARCH_SEARCH_PROVIDER.buildUrl(input), "search");
+}
+
+/** User-facing text for a rejected input (the "empty" case shows no message). */
+export function describeResolveError(reason: "unsupported-scheme" | "invalid"): string {
+  return reason === "unsupported-scheme"
+    ? "Only http and https addresses are supported."
+    : "That address is not valid.";
 }
 
 /** True for a string that parses as an http(s) URL. Used to validate stored values. */
@@ -80,18 +88,6 @@ export function isResearchHttpUrl(value: unknown): value is string {
   try {
     const protocol = new URL(value).protocol;
     return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-/** True when the url is the Research landing page (ignores a trailing slash). */
-export function isResearchLandingUrl(url: string): boolean {
-  try {
-    const a = new URL(url);
-    const b = new URL(RESEARCH_LANDING_URL);
-    const trim = (path: string) => path.replace(/\/+$/, "");
-    return a.origin === b.origin && trim(a.pathname) === trim(b.pathname);
   } catch {
     return false;
   }
@@ -160,12 +156,18 @@ function setState(next: ResearchState): void {
   listeners.forEach((listener) => listener());
 }
 
-/** Builds the closed initial state from saved preferences. Called lazily on first use. */
+/**
+ * Builds the closed initial state from saved preferences. Called lazily on first use.
+ * Starts on the homepage unless "remember last destination" has a saved page.
+ */
 export function initializeResearch(): ResearchState {
   preferences = readPreferences();
+  const remembered = preferences.rememberLastUrl ? preferences.lastUrl : null;
   state = {
     mode: "closed",
-    url: RESEARCH_LANDING_URL,
+    view: remembered ? "page" : "home",
+    focus: "app",
+    url: remembered ?? RESEARCH_HOME_URL,
     splitPercent: preferences.splitPercent,
   };
   return state;
@@ -188,16 +190,38 @@ export function useResearch(): ResearchState {
 }
 
 /* ------------------------------------------------------------------ */
+/* Mobile layout                                                       */
+/* ------------------------------------------------------------------ */
+
+function subscribeMobile(listener: () => void): () => void {
+  const query = window.matchMedia(RESEARCH_MOBILE_QUERY);
+  query.addEventListener("change", listener);
+  return () => query.removeEventListener("change", listener);
+}
+
+function getMobileSnapshot(): boolean {
+  return window.matchMedia(RESEARCH_MOBILE_QUERY).matches;
+}
+
+/** True on a narrow screen, where Research is full-screen instead of a split. */
+export function useResearchMobile(): boolean {
+  return useSyncExternalStore(subscribeMobile, getMobileSnapshot);
+}
+
+/* ------------------------------------------------------------------ */
 /* Operations                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Opens Research in split mode at the saved proportion (50/50 the first time). */
+/**
+ * Opens Research in split mode at the saved proportion (50/50 the first time).
+ * The destination is kept as it was: reopening does not send the user back to
+ * the homepage; only goHomeResearch() does that. On mobile it opens with the
+ * Research side in front.
+ */
 export function openResearch(): void {
   const current = getResearchState();
   if (current.mode === "split") return;
-  const prefs = getPreferences();
-  const url = prefs.rememberLastUrl && prefs.lastUrl ? prefs.lastUrl : RESEARCH_LANDING_URL;
-  setState({ ...current, mode: "split", url });
+  setState({ ...current, mode: "split", focus: "research" });
 }
 
 /** Sidebar control: opens Research when closed, closes it when open. */
@@ -206,15 +230,26 @@ export function toggleResearch(): void {
   else closeResearch();
 }
 
-/** Closes Research. The pane (and its iframe) unmounts; only preferences are kept. */
+/** Closes Research. The pane (and its iframe) unmounts; the destination stays in the store. */
 export function closeResearch(): void {
   const current = getResearchState();
   if (current.mode === "closed") return;
-  setState({ ...current, mode: "closed" });
+  setState({ ...current, mode: "closed", focus: "app" });
+}
+
+/**
+ * Mobile: moves the screen to the other side (app <-> Research).
+ * Nothing is unmounted, so both sides keep their state.
+ */
+export function cycleResearchFocus(): void {
+  const current = getResearchState();
+  if (current.mode !== "split") return;
+  setState({ ...current, focus: current.focus === "app" ? "research" : "app" });
 }
 
 /**
  * Navigates the iframe. Accepts a URL, a domain, or search text.
+ * Switches to the "page" view (the homepage header goes away).
  * Returns the resolution so the caller can show an error for rejected input.
  * Ignored (but still resolved) if Research has been closed in the meantime.
  */
@@ -225,11 +260,21 @@ export function navigateResearch(input: string): ResearchResolveResult {
   const current = getResearchState();
   if (current.mode !== "split") return result;
 
-  setState({ ...current, url: result.url });
+  setState({ ...current, view: "page", url: result.url });
 
   const prefs = getPreferences();
   if (prefs.rememberLastUrl) savePreferences({ ...prefs, lastUrl: result.url });
   return result;
+}
+
+/** Returns to the homepage: search bar + shortcuts above the home page. */
+export function goHomeResearch(): void {
+  const current = getResearchState();
+  if (current.view === "home") return;
+  setState({ ...current, view: "home", url: RESEARCH_HOME_URL });
+
+  const prefs = getPreferences();
+  if (prefs.rememberLastUrl && prefs.lastUrl) savePreferences({ ...prefs, lastUrl: null });
 }
 
 /** Updates the split live (during drag). Does not write to localStorage. */

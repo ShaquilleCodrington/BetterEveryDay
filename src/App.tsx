@@ -8,6 +8,9 @@
 //      everything else -> AuthGate -> MainApplication
 //      (Congruence now lives only at /congruence.)
 //
+// Research is not a route: MainLayout wraps the page area in
+// ResearchWorkspace and passes ResearchPage in as the pane.
+//
 // Authentication has two responsibilities here:
 //
 // 1. AuthGate
@@ -112,12 +115,6 @@ function App() {
   // App pages continue through the existing auth gate.
   if (location.pathname === "/") {
     return <LandingPage />;
-  }
-
-  // The Research landing page loads inside the Research iframe, so it
-  // renders outside AuthGate: no sidebar and no login.
-  if (location.pathname === "/study/research") {
-    return <ResearchPage />;
   }
 
   return <AuthGate />;
@@ -362,6 +359,7 @@ function MainLayout({
     >
       {/* Sidebar remains outside the Research split. */}
       <div
+        className="sidebar-wrap"
         style={{
           flex: `0 0 ${
             sidebarState === "closed"
@@ -380,7 +378,7 @@ function MainLayout({
       </div>
 
       {/* Research splits the main application surface, not the sidebar. */}
-      <ResearchWorkspace>
+      <ResearchWorkspace pane={<ResearchPage />}>
         <div
           className="main-content"
           style={{
