@@ -1,29 +1,18 @@
 // Import Electron modules used to control the application
 // and create native desktop windows.
-import { app, BrowserWindow, Tray, nativeImage } from "electron";
+import { app, BrowserWindow, ipcMain, Notification, dialog } from "electron";
 import { createMainWindow } from "./windows/mainWindow.js";
 import { createTimerWindow } from "./windows/timerWindow.js";
-import { ipcMain, Notification, dialog } from "electron";
+import log from "./logger.js";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import pkg from "electron-updater";
 
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const iconsDir = path.join(__dirname, "icons");
-
-const appIconPath =
-  process.platform === "win32"
-    ? path.join(iconsDir, "icon.ico")
-    : path.join(iconsDir, "icon.png");
+const { autoUpdater } = pkg;
 
 // Windows: must match build.appId so the taskbar groups and shows the right icon.
 app.setAppUserModelId("com.bettereveryday.app");
 
-const { autoUpdater } = pkg;
-
-let isInstallingUpdate = false;
     // Profile data persistence
     // ------------------------------------------------------
     // The user's profile (name, titles, bio, photo) lives in its own
@@ -39,85 +28,165 @@ let isInstallingUpdate = false;
     // of the generic "Electron"), in the taskbar, and in userData paths.
     app.setName("BetterEveryDay");
 
-function setupAutoUpdater()
-    {
-        autoUpdater.autoDownload = true;
+    // Window and update state
+    // ------------------------------------------------------
+    let mainWindow = null;
 
-        // Fired once the update has fully downloaded and is ready to
-        // install. This is where the user gets asked, matching the
-        // "always tell them" decision — never applied silently.
+    // True once an update has finished downloading and is
+    // waiting to be installed.
+    let isUpdateReady = false;
+
+    // Closes every window except the main window (the floating timer).
+    function closeOtherWindows()
+    {
+        BrowserWindow.getAllWindows().forEach((win) =>
+        {
+            if (win !== mainWindow && !win.isDestroyed())
+            {
+                log.info("[windows] closing timer window for update");
+                win.close();
+            }
+        });
+    }
+
+    function openMainWindow()
+    {
+        mainWindow = createMainWindow();
+
+        mainWindow.on("closed", () =>
+        {
+            log.info("[windows] main window closed");
+            mainWindow = null;
+
+            // With an update waiting, a leftover timer window would keep
+            // the app running and stop the install-on-quit from starting.
+            if (isUpdateReady)
+            {
+                closeOtherWindows();
+            }
+        });
+    }
+
+    function showMainWindow()
+    {
+        if (!mainWindow)
+        {
+            openMainWindow();
+            return;
+        }
+
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+    }
+
+    // Auto updater
+    // ------------------------------------------------------
+    // electron-updater downloads the update, starts the installer and
+    // quits the app. The app never force-exits or kills processes itself.
+    async function promptToInstall(version)
+    {
+        const options = {
+            type: "info",
+            title: "Update Ready",
+            message: `A new version of BetterEveryDay (${version}) has been downloaded.`,
+            detail: "Restart now to install it, or choose Later and it will install after you close the app.",
+            buttons: ["Restart Now", "Later"],
+            defaultId: 0,
+            cancelId: 1,
+        };
+
+        const { response } = mainWindow
+            ? await dialog.showMessageBox(mainWindow, options)
+            : await dialog.showMessageBox(options);
+
+        if (response !== 0)
+        {
+            log.info("[updater] user chose Later; update installs on quit");
+            return;
+        }
+
+        log.info("[updater] user chose Restart Now");
+        closeOtherWindows();
+
+        // isSilent = true, isForceRunAfter = true (reopen after install)
+        autoUpdater.quitAndInstall(true, true);
+    }
+
+    function setupAutoUpdater()
+    {
+        autoUpdater.logger = log;
+        autoUpdater.autoDownload = true;
+        autoUpdater.autoInstallOnAppQuit = true;
+
         autoUpdater.on("update-downloaded", (info) =>
         {
-            dialog.showMessageBox({
-                type: "info",
-                title: "Update Ready",
-                message: `A new version of Better Every Day (${info.version}) has been downloaded.`,
-                detail: "Restart now to install it, or keep working and it'll apply the next time you close the app.",
-                buttons: ["Restart Now", "Later"],
-                defaultId: 0,
-                cancelId: 1,
-            }).then((result) =>
+            isUpdateReady = true;
+            log.info(`[updater] update ${info.version} downloaded`);
+
+            promptToInstall(info.version).catch((error) =>
             {
-              if (result.response === 0)
-                {
-                    // CHANGED: no manual window destroying, flags, or
-                    // forced exit anymore. electron-updater already
-                    // starts the installer, quits the app, and
-                    // relaunches it afterward (silent = true,
-                    // force run after = true), and the installer does
-                    // its own "is the app still running" check. Our
-                    // extra closing logic was racing with that check
-                    // and causing "Failed to uninstall old application
-                    // files". Choosing "Later" still installs on the
-                    // next normal quit (autoInstallOnAppQuit default).
-                    autoUpdater.quitAndInstall(true, true);
-                }
+                log.error("[updater] install prompt failed:", error);
             });
         });
 
-        // Non-fatal — if the update check fails (no internet, GitHub
-        // unreachable, etc.), the app should just continue running
-        // normally rather than interrupting the user.
+        // A failed check or download must never stop the app.
         autoUpdater.on("error", (error) =>
         {
-            console.error("[main] auto-updater error:", error);
+            log.error("[updater] error:", error);
         });
 
-        try
-        {
-            autoUpdater.checkForUpdates();
-        }
-        catch (error)
-        {
-            // electron-updater throws synchronously here (not via the
-            // "error" event above) when there's no app-update.yml to
-            // read — which is always the case in dev, since that file
-            // is only generated by electron-builder for packaged
-            // builds. Without this catch, `npm run dashboard` crashes
-            // on startup every time.
-            console.error("[main] auto-updater failed to start:", error);
-        }
+        // The check and the download are separate promises. Both are
+        // awaited so neither can reject without being handled.
+        autoUpdater.checkForUpdates()
+            .then((result) => result?.downloadPromise)
+            .catch((error) =>
+            {
+                log.error("[updater] update check or download failed:", error);
+            });
     }
+
+    // Single-instance lock
+    // ------------------------------------------------------
+    // Only for the installed app. Development shares the same app name,
+    // so locking it would stop `npm run dashboard` while the installed
+    // app is open.
+    const hasInstanceLock = !app.isPackaged || app.requestSingleInstanceLock();
+
+    if (!hasInstanceLock)
+    {
+        log.info("[app] another instance is already running; quitting this one");
+        app.quit();
+    }
+    else
+    {
+        app.on("second-instance", () =>
+        {
+            log.info("[app] second launch detected; showing main window");
+            app.whenReady().then(showMainWindow);
+        });
 
         // Wait until Electron has finished starting before
         // creating the application's main window.
-    app.whenReady().then(() =>
-    {
-            //creates mainWindow for application
-        createMainWindow();
-
-        // Check for updates once the app has started — but only in
-        // packaged builds. There's no update feed to check in dev,
-        // and electron-updater isn't meant to run against an
-        // unpackaged build anyway. Runs once per launch; if a newer
-        // version is on GitHub, this kicks off the silent background
-        // download.
-        if (app.isPackaged)
+        app.whenReady().then(() =>
         {
-            setupAutoUpdater();
-        }
-       
-    });
+            log.info(`[app] started: version ${app.getVersion()}, pid ${process.pid}, path ${process.execPath}`);
+
+            //creates mainWindow for application
+            openMainWindow();
+
+            // Updates only work in the installed (packaged) app.
+            if (app.isPackaged)
+            {
+                setupAutoUpdater();
+            }
+        });
+    }
+
+    // Quit steps, recorded so a stuck shutdown can be traced.
+    app.on("before-quit", () => log.info("[app] before-quit"));
+    app.on("will-quit", () => log.info("[app] will-quit"));
+    app.on("quit", (_event, exitCode) => log.info(`[app] quit, exit code ${exitCode}`));
 
     ipcMain.on("open-timer", () =>
         {
@@ -295,7 +364,7 @@ function setupAutoUpdater()
     {
         if (BrowserWindow.getAllWindows().length === 0)
         {
-            createMainWindow();
+            openMainWindow();
         }
     });
 

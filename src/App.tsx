@@ -38,7 +38,7 @@
 //
 // ======================================================
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import LoginScreen from "./Services/firebase/login";
 import {
@@ -55,35 +55,16 @@ import {
   useOutletContext,
 } from "react-router-dom";
 
-import FocusPage from "./pages/FocusPage";
-import TaskListPage from "./pages/TaskListPage";
 import Sidebar from "./Components/Sidebar";
-import CongruencePage from "./pages/CongruencePage";
 import Toolbar from "./Components/Toolbar";
-import PlanningPage from "./pages/PlanningPage";
-import RechargePage from "./pages/RechargePage";
-import SettingsPage from "./pages/SettingsPage";
-import AppearancePage from "./pages/AppearancePage";
-import NotificationsPage from "./pages/NotificationsPage";
-import GeneralSettingsPage from "./pages/GeneralSettingsPage";
-import TimerPage from "./pages/TimerPage";
-import NotesPage from "./pages/NotesPage";
-import JourneyPage from "./pages/JourneyPage";
-import ProfilePage from "./pages/ProfilePage";
-import HelpPage from "./pages/HelpPage";
-import JourneyPreview from "./Features/journey/Utils/JourneyPreview";
+
+// InvoicePage is loaded at startup because it has its own stylesheet.
+// Loading it later would change the order of the app's styles.
 import InvoicePage from "./pages/InvoicePage.tsx";
-import CalendarPage from "./pages/CalendarPage";
-import FeedbackPage from "./pages/FeedbackPage";
-import DeletedPage from "./pages/DeletedPage";
 
 // Research
-import ResearchPage from "./pages/ResearchPage";
 import { ResearchWorkspace } from "./Features/research/ResearchWorkspace.tsx";
 
-// 2026-11-14 — The landing page is JavaScript maintained in the website submodule.
-// @ts-expect-error The submodule does not provide a TypeScript declaration for this JSX module.
-import LandingPage from "../website/src/pages/LandingPage.jsx";
 import "../website/src/styles/index.css";
 import "../website/src/styles/app.css";
 
@@ -106,6 +87,33 @@ import {
 import "./Css/App.css";
 import { initializeDefaults } from "./Data/defaultContent.ts";
 
+// Pages are loaded the first time they are opened (code splitting).
+const FocusPage = lazy(() => import("./pages/FocusPage"));
+const TaskListPage = lazy(() => import("./pages/TaskListPage"));
+const CongruencePage = lazy(() => import("./pages/CongruencePage"));
+const PlanningPage = lazy(() => import("./pages/PlanningPage"));
+const RechargePage = lazy(() => import("./pages/RechargePage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AppearancePage = lazy(() => import("./pages/AppearancePage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const GeneralSettingsPage = lazy(() => import("./pages/GeneralSettingsPage"));
+const TimerPage = lazy(() => import("./pages/TimerPage"));
+const NotesPage = lazy(() => import("./pages/NotesPage"));
+const JourneyPage = lazy(() => import("./pages/JourneyPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+const JourneyPreview = lazy(() => import("./Features/journey/Utils/JourneyPreview"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const FeedbackPage = lazy(() => import("./pages/FeedbackPage"));
+const DeletedPage = lazy(() => import("./pages/DeletedPage"));
+const ResearchPage = lazy(() => import("./pages/ResearchPage"));
+
+// 2026-11-14 — The landing page is JavaScript maintained in the website submodule.
+const LandingPage = lazy(
+  // @ts-expect-error The submodule does not provide a TypeScript declaration for this JSX module.
+  () => import("../website/src/pages/LandingPage.jsx")
+);
+
 type AuthStatus = "loading" | "login";
 
 function App() {
@@ -114,7 +122,11 @@ function App() {
   // Show the website at the domain root.
   // App pages continue through the existing auth gate.
   if (location.pathname === "/") {
-    return <LandingPage />;
+    return (
+      <Suspense fallback={null}>
+        <LandingPage />
+      </Suspense>
+    );
   }
 
   return <AuthGate />;
@@ -260,7 +272,14 @@ function MainApplication({
        </Route>
 
       {/* Timer is intentionally outside MainLayout */}
-      <Route path="/timer" element={<TimerPage />} />
+      <Route
+        path="/timer"
+        element={
+          <Suspense fallback={null}>
+            <TimerPage />
+          </Suspense>
+        }
+      />
     </Routes>
   );
 }
@@ -378,7 +397,13 @@ function MainLayout({
       </div>
 
       {/* Research splits the main application surface, not the sidebar. */}
-      <ResearchWorkspace pane={<ResearchPage />}>
+      <ResearchWorkspace
+        pane={
+          <Suspense fallback={null}>
+            <ResearchPage />
+          </Suspense>
+        }
+      >
         <div
           className="main-content"
           style={{
@@ -395,18 +420,21 @@ function MainLayout({
           />
 
           <div className="page-container">
-            <Outlet
-              context={{
-                currentUser,
-                onLogin,
-                onLogout,
-                tasks,
-                onCreateTask: handleCreateTask,
-                onEditTask: handleEditTask,
-                onDeleteTask: handleDeleteTask,
-                onChecklistChange: handleChecklistChange,
-              }}
-            />
+            {/* Keeps the sidebar and toolbar on screen while a page loads. */}
+            <Suspense fallback={null}>
+              <Outlet
+                context={{
+                  currentUser,
+                  onLogin,
+                  onLogout,
+                  tasks,
+                  onCreateTask: handleCreateTask,
+                  onEditTask: handleEditTask,
+                  onDeleteTask: handleDeleteTask,
+                  onChecklistChange: handleChecklistChange,
+                }}
+              />
+            </Suspense>
           </div>
         </div>
       </ResearchWorkspace>
